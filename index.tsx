@@ -16,30 +16,44 @@ import { setSidePanelBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions
 import { Location } from 'history';
 import { handleFirstTimeLoad } from '~/store/workbench/workbench-actions';
 import {
-    AddStudyMenuComponent, StudiesMainPanel, CreateStudyDialog,
-    studyPanelColumns, studyPanelActions, openStudiesPanel,
-    StudiesPanelMiddlewareService, STUDY_PANEL_ID
+    AddStudyMenuComponent, StudyListMainPanel, CreateStudyDialog,
+    studyListPanelColumns, studyListPanelActions, openStudyListPanel,
+    StudyListPanelMiddlewareService, STUDY_LIST_PANEL_ID,
+    studyListRoutePath
+} from './studyList';
+import {
+    AddPatientMenuComponent, CreatePatientDialog, PATIENT_LIST_PANEL_ID, StudyPathId
+    //    PatientListPanelColumns, patientListPanelActions,
+    //    PatientListPanelMiddlewareService,
+} from './patientList';
+import {
+    studyRoutePath, openStudyPanel, StudyMainPanel
 } from './study';
 import { dataExplorerMiddleware } from "~/store/data-explorer/data-explorer-middleware";
 
 const categoryName = "Studies";
-export const routePath = "/sample_tracker_Studies";
 
 export const register = (pluginConfig: PluginConfig) => {
 
     pluginConfig.centerPanelList.push((elms) => {
-        elms.push(<Route path={routePath} component={StudiesMainPanel} />);
+        elms.push(<Route path={studyListRoutePath} component={StudyListMainPanel} exact={true} />);
+        elms.push(<Route path={studyRoutePath} component={StudyMainPanel} exact={true} />);
         return elms;
     });
 
     pluginConfig.newButtonMenuList.push((elms, menuItemClass) => {
         elms.push(<AddStudyMenuComponent className={menuItemClass} />);
+        elms.push(<AddPatientMenuComponent className={menuItemClass} />);
         return elms;
     });
 
     pluginConfig.navigateToHandlers.push((dispatch: Dispatch, getState: () => RootState, uuid: string) => {
         if (uuid === categoryName) {
-            dispatch(push(routePath));
+            dispatch(push(studyListRoutePath));
+            return true;
+        }
+        if (uuid.startsWith(studyListRoutePath)) {
+            dispatch(push(uuid));
             return true;
         }
         return false;
@@ -48,26 +62,41 @@ export const register = (pluginConfig: PluginConfig) => {
     pluginConfig.sidePanelCategories.push((cats: string[]): string[] => { cats.push(categoryName); return cats; });
 
     pluginConfig.locationChangeHandlers.push((store: RootStore, pathname: string): boolean => {
-        if (matchPath(pathname, { path: routePath, exact: true })) {
+        if (matchPath(pathname, { path: studyListRoutePath, exact: true })) {
             store.dispatch(handleFirstTimeLoad(
                 (dispatch: Dispatch) => {
-                    dispatch(studyPanelActions.SET_COLUMNS({ columns: studyPanelColumns }));
-                    dispatch<any>(openStudiesPanel);
+                    dispatch(studyListPanelActions.SET_COLUMNS({ columns: studyListPanelColumns }));
+                    dispatch<any>(openStudyListPanel);
                     dispatch<any>(activateSidePanelTreeItem(categoryName));
                     dispatch<any>(setSidePanelBreadcrumbs(categoryName));
+                }));
+            return true;
+        }
+        const studyid = matchPath<StudyPathId>(pathname, { path: studyRoutePath, exact: true });
+        if (studyid) {
+            store.dispatch(handleFirstTimeLoad(
+                (dispatch: Dispatch) => {
+                    // dispatch(studyListPanelActions.SET_COLUMNS({ columns: studyListPanelColumns }));
+                    dispatch<any>(openStudyPanel(studyid.params.uuid));
+                    // dispatch<any>(activateSidePanelTreeItem(categoryName));
+                    // dispatch<any>(setSidePanelBreadcrumbs(categoryName));
                 }));
             return true;
         }
         return false;
     });
 
-    pluginConfig.enableNewButtonMatchers.push((location: Location) => (!!matchPath(location.pathname, { path: routePath, exact: true })));
+    pluginConfig.enableNewButtonMatchers.push((location: Location) => (!!matchPath(location.pathname, { path: studyListRoutePath, exact: false })));
 
     pluginConfig.dialogs.push(<CreateStudyDialog />);
+    pluginConfig.dialogs.push(<CreatePatientDialog />);
 
     pluginConfig.middlewares.push((elms, services) => {
         elms.push(dataExplorerMiddleware(
-            new StudiesPanelMiddlewareService(services, STUDY_PANEL_ID)
+            new StudyListPanelMiddlewareService(services, STUDY_LIST_PANEL_ID)
+        ));
+        elms.push(dataExplorerMiddleware(
+            new StudyListPanelMiddlewareService(services, PATIENT_LIST_PANEL_ID)
         ));
         return elms;
     });
