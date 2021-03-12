@@ -4,19 +4,19 @@
 
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { studyListRoutePath } from './studyList';
 import { Dispatch } from "redux";
 import { propertiesActions } from "~/store/properties/properties-actions";
 import { getProperty } from '~/store/properties/properties';
 import { RootState } from '~/store/store';
+import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
+import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 
-export const studyRoutePath = studyListRoutePath + "/:uuid";
-const STUDY_PANEL_CURRENT_UUID = "StudyPanelCurrentUUID";
+import { PATIENT_LIST_PANEL_ID, STUDY_PANEL_CURRENT_UUID, patientListPanelActions } from './patientList';
 
 export const openStudyPanel = (projectUuid: string) =>
     (dispatch: Dispatch) => {
         dispatch(propertiesActions.SET_PROPERTY({ key: STUDY_PANEL_CURRENT_UUID, value: projectUuid }));
-        // dispatch(studyListPanelActions.REQUEST_ITEMS());
+        dispatch(patientListPanelActions.REQUEST_ITEMS());
     };
 
 interface StudyProps {
@@ -29,4 +29,15 @@ export const studyMapStateToProps = (state: RootState) => ({
 
 export const StudyMainPanel = connect(studyMapStateToProps)(
     ({ studyUuid }: StudyProps) =>
-        <p>Main panel for study {studyUuid}</p>);
+        <div>
+            <h1>Patients</h1>
+            <DataExplorer
+                id={PATIENT_LIST_PANEL_ID}
+                onRowClick={(uuid: string) => { }}
+                onRowDoubleClick={(uuid: string) => { }}
+                onContextMenu={(event: React.MouseEvent<HTMLElement>, resourceUuid: string) => { }}
+                contextMenuColumn={true}
+                dataTableDefaultView={
+                    <DataTableDefaultView />
+                } />
+        </div>);

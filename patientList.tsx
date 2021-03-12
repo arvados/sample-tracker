@@ -7,7 +7,7 @@ import { InjectedFormProps } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { ProjectCreateFormDialogData } from '~/store/projects/project-create-actions';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { ProjectNameField, ProjectDescriptionField } from '~/views-components/form-fields/project-form-fields';
+import { ProjectNameField } from '~/views-components/form-fields/project-form-fields';
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { ServiceRepository } from "~/services/services";
 import { compose, MiddlewareAPI, Dispatch } from "redux";
@@ -37,13 +37,16 @@ import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
 import { updateResources } from "~/store/resources/resources-actions";
 import {
     studyRoutePath
-} from './study';
+} from './studyList';
 import { matchPath } from "react-router";
+import { getProperty } from '~/store/properties/properties';
 
 const PATIENT_CREATE_FORM_NAME = "patientCreateFormName";
 export const PATIENT_LIST_PANEL_ID = "patientListPanel";
 export const patientListPanelActions = bindDataExplorerActions(PATIENT_LIST_PANEL_ID);
 export const sampleTrackerPatientType = "sample_tracker:patient";
+export const STUDY_PANEL_CURRENT_UUID = "StudyPanelCurrentUUID";
+export const patientRoutePath = "/SampleTracker/Patient";
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -54,8 +57,7 @@ export interface ProjectCreateFormDialogData {
 type DialogProjectProps = WithDialogProps<{}> & InjectedFormProps<ProjectCreateFormDialogData>;
 
 const PatientAddFields = () => <span>
-    <ProjectNameField label="Patient name" />
-    <ProjectDescriptionField />
+    <ProjectNameField label="Patient anonymized identifier" />
 </span>;
 
 const DialogPatientCreate = (props: DialogProjectProps) =>
@@ -111,7 +113,7 @@ enum PatientPanelColumnNames {
     NAME = "Name"
 }
 
-export const PatientListPanelColumns: DataColumns<string> = [
+export const patientListPanelColumns: DataColumns<string> = [
     {
         name: PatientPanelColumnNames.NAME,
         selected: true,
@@ -121,11 +123,6 @@ export const PatientListPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceName uuid={uuid} />
     }
 ];
-
-export const openPatientListPanel = (dispatch: Dispatch) => {
-    // dispatch(propertiesActions.SET_PROPERTY({ key: PROJECT_PANEL_CURRENT_UUID, value: projectUuid }));
-    dispatch(patientListPanelActions.REQUEST_ITEMS());
-};
 
 export interface TrackerProps {
     className?: string;
@@ -149,14 +146,16 @@ const setItems = (listResults: ListResults<GroupResource>) =>
         items: listResults.items.map(resource => resource.uuid),
     });
 
-const getFilters = (dataExplorer: DataExplorerState) => {
+const getFilters = (dataExplorer: DataExplorerState, studyUuid: string) => {
     //    const columns = dataExplorer.columns as DataColumns<string>;
     //    const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
     //    const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
     //    const activeStatusFilter = Object.keys(statusColumnFilters).find(
     //        filterName => statusColumnFilters[filterName].selected
     //    );
+
     const fb = new FilterBuilder();
+    fb.addEqual("owner_uuid", studyUuid);
     fb.addEqual("properties.type", sampleTrackerPatientType);
 
     const nameFilters = new FilterBuilder()
@@ -169,9 +168,9 @@ const getFilters = (dataExplorer: DataExplorerState) => {
     );
 };
 
-const getParams = (dataExplorer: DataExplorerState) => ({
+const getParams = (dataExplorer: DataExplorerState, studyUuid: string) => ({
     ...dataExplorerToListParams(dataExplorer),
-    filters: getFilters(dataExplorer),
+    filters: getFilters(dataExplorer, studyUuid),
 });
 
 export class PatientListPanelMiddlewareService extends DataExplorerMiddlewareService {
@@ -183,10 +182,19 @@ export class PatientListPanelMiddlewareService extends DataExplorerMiddlewareSer
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
 
+        const studyUuid = getProperty<string>(STUDY_PANEL_CURRENT_UUID)(state.properties);
+
+        if (!studyUuid) {
+            return;
+        }
+
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-            const response = await this.services.groupsService.list(getParams(dataExplorer));
+            const response = await this.services.groupsService.list(getParams(dataExplorer, studyUuid));
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+            for (const i of response.items) {
+                i.uuid = patientRoutePath + "/" + i.uuid;
+            }
             api.dispatch(updateResources(response.items));
             api.dispatch(setItems(response));
         } catch (e) {

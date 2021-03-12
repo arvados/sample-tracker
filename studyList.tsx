@@ -40,7 +40,8 @@ const STUDY_CREATE_FORM_NAME = "studyCreateFormName";
 export const STUDY_LIST_PANEL_ID = "studyPanel";
 export const studyListPanelActions = bindDataExplorerActions(STUDY_LIST_PANEL_ID);
 export const sampleTrackerStudyType = "sample_tracker:study";
-export const studyListRoutePath = "/sample_tracker_Studies";
+export const studyListRoutePath = "/sampleTracker/Studies";
+export const studyRoutePath = studyListRoutePath + "/:uuid";
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;

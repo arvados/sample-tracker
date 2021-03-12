@@ -19,15 +19,16 @@ import {
     AddStudyMenuComponent, StudyListMainPanel, CreateStudyDialog,
     studyListPanelColumns, studyListPanelActions, openStudyListPanel,
     StudyListPanelMiddlewareService, STUDY_LIST_PANEL_ID,
-    studyListRoutePath
+    studyListRoutePath, studyRoutePath
 } from './studyList';
 import {
-    AddPatientMenuComponent, CreatePatientDialog, PATIENT_LIST_PANEL_ID, StudyPathId
-    //    PatientListPanelColumns, patientListPanelActions,
-    //    PatientListPanelMiddlewareService,
+    AddPatientMenuComponent, CreatePatientDialog, PATIENT_LIST_PANEL_ID, StudyPathId,
+    PatientListPanelMiddlewareService,
+    patientListPanelColumns, patientListPanelActions,
+
 } from './patientList';
 import {
-    studyRoutePath, openStudyPanel, StudyMainPanel
+    openStudyPanel, StudyMainPanel
 } from './study';
 import { dataExplorerMiddleware } from "~/store/data-explorer/data-explorer-middleware";
 
@@ -76,7 +77,7 @@ export const register = (pluginConfig: PluginConfig) => {
         if (studyid) {
             store.dispatch(handleFirstTimeLoad(
                 (dispatch: Dispatch) => {
-                    // dispatch(studyListPanelActions.SET_COLUMNS({ columns: studyListPanelColumns }));
+                    dispatch(patientListPanelActions.SET_COLUMNS({ columns: patientListPanelColumns }));
                     dispatch<any>(openStudyPanel(studyid.params.uuid));
                     // dispatch<any>(activateSidePanelTreeItem(categoryName));
                     // dispatch<any>(setSidePanelBreadcrumbs(categoryName));
@@ -96,7 +97,7 @@ export const register = (pluginConfig: PluginConfig) => {
             new StudyListPanelMiddlewareService(services, STUDY_LIST_PANEL_ID)
         ));
         elms.push(dataExplorerMiddleware(
-            new StudyListPanelMiddlewareService(services, PATIENT_LIST_PANEL_ID)
+            new PatientListPanelMiddlewareService(services, PATIENT_LIST_PANEL_ID)
         ));
         return elms;
     });
