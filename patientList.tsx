@@ -46,7 +46,9 @@ export const PATIENT_LIST_PANEL_ID = "patientListPanel";
 export const patientListPanelActions = bindDataExplorerActions(PATIENT_LIST_PANEL_ID);
 export const sampleTrackerPatientType = "sample_tracker:patient";
 export const STUDY_PANEL_CURRENT_UUID = "StudyPanelCurrentUUID";
-export const patientRoutePath = "/SampleTracker/Patient";
+export const PATIENT_PANEL_CURRENT_UUID = "PatientPanelCurrentUUID";
+export const patientBaseRoutePath = "/SampleTracker/Patient";
+export const patientRoutePath = patientBaseRoutePath + "/:uuid";
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -147,13 +149,6 @@ const setItems = (listResults: ListResults<GroupResource>) =>
     });
 
 const getFilters = (dataExplorer: DataExplorerState, studyUuid: string) => {
-    //    const columns = dataExplorer.columns as DataColumns<string>;
-    //    const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
-    //    const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
-    //    const activeStatusFilter = Object.keys(statusColumnFilters).find(
-    //        filterName => statusColumnFilters[filterName].selected
-    //    );
-
     const fb = new FilterBuilder();
     fb.addEqual("owner_uuid", studyUuid);
     fb.addEqual("properties.type", sampleTrackerPatientType);
@@ -193,7 +188,7 @@ export class PatientListPanelMiddlewareService extends DataExplorerMiddlewareSer
             const response = await this.services.groupsService.list(getParams(dataExplorer, studyUuid));
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             for (const i of response.items) {
-                i.uuid = patientRoutePath + "/" + i.uuid;
+                i.uuid = patientBaseRoutePath + "/" + i.uuid;
             }
             api.dispatch(updateResources(response.items));
             api.dispatch(setItems(response));

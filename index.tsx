@@ -12,7 +12,7 @@ import { push } from "react-router-redux";
 import { Route, matchPath } from "react-router";
 import { RootStore } from '~/store/store';
 import { activateSidePanelTreeItem } from '~/store/side-panel-tree/side-panel-tree-actions';
-import { setSidePanelBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+import { setBreadcrumbs, setSidePanelBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
 import { Location } from 'history';
 import { handleFirstTimeLoad } from '~/store/workbench/workbench-actions';
 import {
@@ -24,13 +24,17 @@ import {
 import {
     AddPatientMenuComponent, CreatePatientDialog, PATIENT_LIST_PANEL_ID, StudyPathId,
     PatientListPanelMiddlewareService,
-    patientListPanelColumns, patientListPanelActions,
-
+    patientListPanelColumns, patientListPanelActions, patientRoutePath, patientBaseRoutePath
 } from './patientList';
 import {
     openStudyPanel, StudyMainPanel
 } from './study';
+import {
+    openPatientPanel, PatientMainPanel
+} from './patient';
 import { dataExplorerMiddleware } from "~/store/data-explorer/data-explorer-middleware";
+import { getResource } from "~/store/resources/resources";
+import { GroupResource } from "~/models/group";
 
 const categoryName = "Studies";
 
@@ -39,6 +43,7 @@ export const register = (pluginConfig: PluginConfig) => {
     pluginConfig.centerPanelList.push((elms) => {
         elms.push(<Route path={studyListRoutePath} component={StudyListMainPanel} exact={true} />);
         elms.push(<Route path={studyRoutePath} component={StudyMainPanel} exact={true} />);
+        elms.push(<Route path={patientRoutePath} component={PatientMainPanel} exact={true} />);
         return elms;
     });
 
@@ -54,6 +59,10 @@ export const register = (pluginConfig: PluginConfig) => {
             return true;
         }
         if (uuid.startsWith(studyListRoutePath)) {
+            dispatch(push(uuid));
+            return true;
+        }
+        if (uuid.startsWith(patientBaseRoutePath)) {
             dispatch(push(uuid));
             return true;
         }
@@ -80,10 +89,29 @@ export const register = (pluginConfig: PluginConfig) => {
                     dispatch(patientListPanelActions.SET_COLUMNS({ columns: patientListPanelColumns }));
                     dispatch<any>(openStudyPanel(studyid.params.uuid));
                     // dispatch<any>(activateSidePanelTreeItem(categoryName));
-                    // dispatch<any>(setSidePanelBreadcrumbs(categoryName));
+                    // const name = getProperty(PATIENT_PANEL_CURRENT_UUID)(state.properties),
+                    const rsc = getResource<GroupResource>(pathname)(store.getState().resources);
+                    if (rsc) {
+                        dispatch<any>(setBreadcrumbs([{ label: categoryName, uuid: categoryName }, { label: rsc.name, uuid: pathname }]));
+                    }
                 }));
             return true;
         }
+        const patientid = matchPath<StudyPathId>(pathname, { path: patientRoutePath, exact: true });
+        if (patientid) {
+            store.dispatch(handleFirstTimeLoad(
+                (dispatch: Dispatch) => {
+                    // dispatch(patientListPanelActions.SET_COLUMNS({ columns: patientListPanelColumns }));
+                    dispatch<any>(openPatientPanel(patientid.params.uuid));
+                    // dispatch<any>(activateSidePanelTreeItem(categoryName));
+                    const patientrsc = getResource<GroupResource>(pathname)(store.getState().resources);
+                    if (patientrsc) {
+                        dispatch<any>(setBreadcrumbs([{ label: categoryName, uuid: categoryName }, { label: patientrsc.name, uuid: pathname }]));
+                    }
+                }));
+            return true;
+        }
+
         return false;
     });
 

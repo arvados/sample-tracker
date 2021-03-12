@@ -97,33 +97,6 @@ enum StudyPanelColumnNames {
     NAME = "Name"
 }
 
-/* const renderName = (dispatch: Dispatch, item: GroupContentsResource) =>
- *     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
- *         <Grid item>
- *             {renderIcon(item)}
- *         </Grid>
- *         <Grid item>
- *             <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
- *                 {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION
- *                     ? <IllegalNamingWarning name={item.name} />
- *                     : null}
- *                 {item.name}
- *             </Typography>
- *         </Grid>
- *         <Grid item>
- *             <Typography variant="caption">
- *                 <FavoriteStar resourceUuid={item.uuid} />
- *                 <PublicFavoriteStar resourceUuid={item.uuid} />
- *             </Typography>
- *         </Grid>
- *     </Grid>;
- *
- * const ResourceName = connect(
- *     (state: RootState, props: { uuid: string }) => {
- *         const resource = getResource<GroupResource>(props.uuid)(state.resources);
- *         return resource;
- *     })((resource: GroupResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
- *  */
 export const studyListPanelColumns: DataColumns<string> = [
     {
         name: StudyPanelColumnNames.NAME,
