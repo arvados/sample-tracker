@@ -27,6 +27,9 @@ import {
     patientListPanelColumns, patientListPanelActions, patientRoutePath, patientBaseRoutePath
 } from './patientList';
 import {
+    AddSampleMenuComponent, CreateSampleDialog
+} from './sampleList';
+import {
     openStudyPanel, StudyMainPanel
 } from './study';
 import {
@@ -50,6 +53,7 @@ export const register = (pluginConfig: PluginConfig) => {
     pluginConfig.newButtonMenuList.push((elms, menuItemClass) => {
         elms.push(<AddStudyMenuComponent className={menuItemClass} />);
         elms.push(<AddPatientMenuComponent className={menuItemClass} />);
+        elms.push(<AddSampleMenuComponent className={menuItemClass} />);
         return elms;
     });
 
@@ -106,7 +110,13 @@ export const register = (pluginConfig: PluginConfig) => {
                     // dispatch<any>(activateSidePanelTreeItem(categoryName));
                     const patientrsc = getResource<GroupResource>(pathname)(store.getState().resources);
                     if (patientrsc) {
-                        dispatch<any>(setBreadcrumbs([{ label: categoryName, uuid: categoryName }, { label: patientrsc.name, uuid: pathname }]));
+                        const studyid = studyListRoutePath + "/" + patientrsc.ownerUuid;
+                        const studyrsc = getResource<GroupResource>(studyid)(store.getState().resources);
+                        if (studyrsc) {
+                            dispatch<any>(setBreadcrumbs([{ label: categoryName, uuid: categoryName },
+                            { label: studyrsc.name, uuid: studyid },
+                            { label: patientrsc.name, uuid: pathname }]));
+                        }
                     }
                 }));
             return true;
@@ -116,9 +126,11 @@ export const register = (pluginConfig: PluginConfig) => {
     });
 
     pluginConfig.enableNewButtonMatchers.push((location: Location) => (!!matchPath(location.pathname, { path: studyListRoutePath, exact: false })));
+    pluginConfig.enableNewButtonMatchers.push((location: Location) => (!!matchPath(location.pathname, { path: patientBaseRoutePath, exact: false })));
 
     pluginConfig.dialogs.push(<CreateStudyDialog />);
     pluginConfig.dialogs.push(<CreatePatientDialog />);
+    pluginConfig.dialogs.push(<CreateSampleDialog />);
 
     pluginConfig.middlewares.push((elms, services) => {
         elms.push(dataExplorerMiddleware(
