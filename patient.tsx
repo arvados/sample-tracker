@@ -13,6 +13,7 @@ import { DataTableDefaultView } from '~/components/data-table-default-view/data-
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ResourceKind } from '~/models/resource';
 import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
+import { openExtractionCreateDialog } from "./extraction";
 
 import { PATIENT_PANEL_CURRENT_UUID } from './patientList';
 import { SAMPLE_LIST_PANEL_ID, sampleListPanelActions } from './sampleList';
@@ -40,7 +41,7 @@ const handleContextMenu = (dispatch: Dispatch) =>
         // const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
         dispatch<any>(openContextMenu(event, {
             name: "",
-            uuid: "",
+            uuid: resourceUuid,
             ownerUuid: "",
             isTrashed: false,
             kind: ResourceKind.NONE,
@@ -53,6 +54,7 @@ export const patientSampleActionSet: ContextMenuActionSet = [[
     {
         name: "Add extraction",
         execute: (dispatch, resource) => {
+            dispatch<any>(openExtractionCreateDialog(resource.uuid));
         }
     },
 ]];

@@ -15,6 +15,11 @@ import { activateSidePanelTreeItem } from '~/store/side-panel-tree/side-panel-tr
 import { setBreadcrumbs, setSidePanelBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
 import { Location } from 'history';
 import { handleFirstTimeLoad } from '~/store/workbench/workbench-actions';
+import { dataExplorerMiddleware } from "~/store/data-explorer/data-explorer-middleware";
+import { getResource } from "~/store/resources/resources";
+import { GroupResource } from "~/models/group";
+import { addMenuActionSet } from '~/views-components/context-menu/context-menu';
+
 import {
     AddStudyMenuComponent, StudyListMainPanel, CreateStudyDialog,
     studyListPanelColumns, studyListPanelActions, openStudyListPanel,
@@ -39,10 +44,7 @@ import {
 import {
     openPatientPanel, PatientMainPanel, PATIENT_SAMPLE_MENU, patientSampleActionSet
 } from './patient';
-import { dataExplorerMiddleware } from "~/store/data-explorer/data-explorer-middleware";
-import { getResource } from "~/store/resources/resources";
-import { GroupResource } from "~/models/group";
-import { addMenuActionSet } from '~/views-components/context-menu/context-menu';
+import { CreateExtractionDialog } from './extraction';
 
 const categoryName = "Studies";
 
@@ -136,6 +138,7 @@ export const register = (pluginConfig: PluginConfig) => {
     pluginConfig.dialogs.push(<CreateStudyDialog />);
     pluginConfig.dialogs.push(<CreatePatientDialog />);
     pluginConfig.dialogs.push(<CreateSampleDialog />);
+    pluginConfig.dialogs.push(<CreateExtractionDialog />);
 
     pluginConfig.middlewares.push((elms, services) => {
         elms.push(dataExplorerMiddleware(

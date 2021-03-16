@@ -4,19 +4,29 @@
 
 import * as React from 'react';
 import { dialogActions } from "~/store/dialog/dialog-actions";
+import { WithDialogProps } from '~/store/dialog/with-dialog';
+import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { ServiceRepository } from "~/services/services";
-import { Dispatch } from "redux";
-import { WrappedFieldProps, initialize } from 'redux-form';
+import { compose, Dispatch } from "redux";
+import { reduxForm, WrappedFieldProps, initialize, InjectedFormProps, Field, startSubmit, reset } from 'redux-form';
 import { RootState } from '~/store/store';
-import { FormControl } from '@material-ui/core';
+import { TextField } from "~/components/text-field/text-field";
+import { getResource } from "~/store/resources/resources";
+import { FormControl, InputLabel } from '@material-ui/core';
 import {
-    patientRoutePath
+    patientBaseRoutePath, patientRoutePath
 } from './patientList';
+import {
+    sampleBaseRoutePath
+} from './sampleList';
 import { matchPath } from "react-router";
 import { MenuItem, Select } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { DispatchProp, connect } from 'react-redux';
 import { withStyles, WithStyles } from '@material-ui/core/styles';
+import { LinkResource } from "~/models/link";
+import { GroupResource } from "~/models/group";
+import { withDialog } from "~/store/dialog/with-dialog";
 
 const EXTRACTION_CREATE_FORM_NAME = "extractionCreateFormName";
 
@@ -42,7 +52,7 @@ export interface ExtractionCreateFormDialogData {
     batchUuid: string;
 }
 
-// type DialogExtractionProps = WithDialogProps<{}> & InjectedFormProps<ExtractionCreateFormDialogData>;
+type DialogExtractionProps = WithDialogProps<{}> & InjectedFormProps<ExtractionCreateFormDialogData>;
 
 type CssRules = 'selectWidth';
 
@@ -52,7 +62,7 @@ const styles = withStyles<CssRules>((theme: ArvadosTheme) => ({
     }
 }));
 
-export const ExtractionTypeSelect = styles(
+export const SampleStateSelect = styles(
     ({ classes, input }: WrappedFieldProps & WithStyles<CssRules>) =>
         <FormControl className={classes.selectWidth}>
             <Select
@@ -72,7 +82,7 @@ export const ExtractionTypeSelect = styles(
             </Select>
         </FormControl>);
 
-export const SampleStateSelect = styles(
+export const ExtractionTypeSelect = styles(
     ({ classes, input }: WrappedFieldProps & WithStyles<CssRules>) =>
         <FormControl className={classes.selectWidth}>
             <Select
@@ -86,7 +96,6 @@ export const SampleStateSelect = styles(
             </Select>
         </FormControl>);
 
-/*
 const ExtractionAddFields = () => <span>
 
     <InputLabel>Extraction type</InputLabel>
@@ -117,11 +126,10 @@ const ExtractionAddFields = () => <span>
     />
 
     <InputLabel>State</InputLabel>
-    <Field
+    <div><Field
         name='state'
-        component={TextField}
-        type="date"
-    />
+        component={SampleStateSelect}
+    /></div>
 
 </span>;
 
@@ -153,12 +161,13 @@ const makeExtractionId = (data: ExtractionCreateFormDialogData, state: RootState
     return id;
 };
 
- const createExtraction = (data: ExtractionCreateFormDialogData) =>
+const createExtraction = (data: ExtractionCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
 
         dispatch(startSubmit(EXTRACTION_CREATE_FORM_NAME));
-        const extractionId = makeExtractionId(data, getState());
-        await services.linkService.create({
+        // const extractionId =
+        makeExtractionId(data, getState());
+        /*await services.linkService.create({
             ownerUuid: data.patientUuid,
             name: extractionId,
             linkClass: extractionTrackerExtractionType,
@@ -170,10 +179,11 @@ const makeExtractionId = (data: ExtractionCreateFormDialogData, state: RootState
                 "sample_tracker:flow_started_at": data.flowStartedAt,
                 "sample_tracker:flow_completed_at": data.flowCompletedAt,
             },
-        });
+        });*/
         dispatch(dialogActions.CLOSE_DIALOG({ id: EXTRACTION_CREATE_FORM_NAME }));
         dispatch(reset(EXTRACTION_CREATE_FORM_NAME));
     };
+
 
 export const CreateExtractionDialog = compose(
     withDialog(EXTRACTION_CREATE_FORM_NAME),
@@ -184,11 +194,11 @@ export const CreateExtractionDialog = compose(
         }
     })
 )(DialogExtractionCreate);
-*/
 
-const openExtractionCreateDialog = (patientUuid: string) =>
+
+export const openExtractionCreateDialog = (sampleUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(initialize(EXTRACTION_CREATE_FORM_NAME, { patientUuid }));
+        dispatch(initialize(EXTRACTION_CREATE_FORM_NAME, { sampleUuid }));
         dispatch(dialogActions.OPEN_DIALOG({ id: EXTRACTION_CREATE_FORM_NAME, data: {} }));
     };
 
