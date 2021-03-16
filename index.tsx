@@ -27,7 +27,8 @@ import {
     patientListPanelColumns, patientListPanelActions, patientRoutePath, patientBaseRoutePath
 } from './patientList';
 import {
-    AddSampleMenuComponent, CreateSampleDialog
+    AddSampleMenuComponent, CreateSampleDialog, SampleListPanelMiddlewareService,
+    SAMPLE_LIST_PANEL_ID, sampleListPanelColumns, sampleListPanelActions
 } from './sampleList';
 import {
     openStudyPanel, StudyMainPanel
@@ -105,7 +106,7 @@ export const register = (pluginConfig: PluginConfig) => {
         if (patientid) {
             store.dispatch(handleFirstTimeLoad(
                 (dispatch: Dispatch) => {
-                    // dispatch(patientListPanelActions.SET_COLUMNS({ columns: patientListPanelColumns }));
+                    dispatch(sampleListPanelActions.SET_COLUMNS({ columns: sampleListPanelColumns }));
                     dispatch<any>(openPatientPanel(patientid.params.uuid));
                     // dispatch<any>(activateSidePanelTreeItem(categoryName));
                     const patientrsc = getResource<GroupResource>(pathname)(store.getState().resources);
@@ -139,6 +140,10 @@ export const register = (pluginConfig: PluginConfig) => {
         elms.push(dataExplorerMiddleware(
             new PatientListPanelMiddlewareService(services, PATIENT_LIST_PANEL_ID)
         ));
+        elms.push(dataExplorerMiddleware(
+            new SampleListPanelMiddlewareService(services, SAMPLE_LIST_PANEL_ID)
+        ));
+
         return elms;
     });
 

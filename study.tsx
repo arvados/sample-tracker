@@ -30,7 +30,6 @@ export const studyMapStateToProps = (state: RootState) => ({
 export const StudyMainPanel = connect(studyMapStateToProps)(
     ({ studyUuid }: StudyProps) =>
         <div>
-            <h1>Patients</h1>
             <DataExplorer
                 id={PATIENT_LIST_PANEL_ID}
                 onRowClick={(uuid: string) => { }}

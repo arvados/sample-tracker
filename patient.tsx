@@ -8,15 +8,16 @@ import { Dispatch } from "redux";
 import { propertiesActions } from "~/store/properties/properties-actions";
 import { getProperty } from '~/store/properties/properties';
 import { RootState } from '~/store/store';
-// import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
-// import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
+import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
+import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 
 import { PATIENT_PANEL_CURRENT_UUID } from './patientList';
+import { SAMPLE_LIST_PANEL_ID, sampleListPanelActions } from './sampleList';
 
 export const openPatientPanel = (projectUuid: string) =>
     (dispatch: Dispatch) => {
         dispatch(propertiesActions.SET_PROPERTY({ key: PATIENT_PANEL_CURRENT_UUID, value: projectUuid }));
-        // dispatch(patientListPanelActions.REQUEST_ITEMS());
+        dispatch(sampleListPanelActions.REQUEST_ITEMS());
     };
 
 interface PatientProps {
@@ -30,5 +31,15 @@ export const patientMapStateToProps = (state: RootState) => ({
 export const PatientMainPanel = connect(patientMapStateToProps)(
     ({ patientUuid }: PatientProps) =>
         <div>
-            <h1>Samples</h1>
+            <DataExplorer
+                id={SAMPLE_LIST_PANEL_ID}
+                hideSearchInput={true}
+                hideColumnSelector={true}
+                onRowClick={(uuid: string) => { }}
+                onRowDoubleClick={(uuid: string) => { }}
+                onContextMenu={(event: React.MouseEvent<HTMLElement>, resourceUuid: string) => { }}
+                contextMenuColumn={true}
+                dataTableDefaultView={
+                    <DataTableDefaultView />
+                } />
         </div>);
