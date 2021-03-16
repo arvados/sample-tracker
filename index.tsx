@@ -27,18 +27,22 @@ import {
     patientListPanelColumns, patientListPanelActions, patientRoutePath, patientBaseRoutePath
 } from './patientList';
 import {
-    AddSampleMenuComponent, CreateSampleDialog, SampleListPanelMiddlewareService,
+    SampleListPanelMiddlewareService,
     SAMPLE_LIST_PANEL_ID, sampleListPanelColumns, sampleListPanelActions
 } from './sampleList';
+import {
+    AddSampleMenuComponent, CreateSampleDialog
+} from './sample';
 import {
     openStudyPanel, StudyMainPanel
 } from './study';
 import {
-    openPatientPanel, PatientMainPanel
+    openPatientPanel, PatientMainPanel, PATIENT_SAMPLE_MENU, patientSampleActionSet
 } from './patient';
 import { dataExplorerMiddleware } from "~/store/data-explorer/data-explorer-middleware";
 import { getResource } from "~/store/resources/resources";
 import { GroupResource } from "~/models/group";
+import { addMenuActionSet } from '~/views-components/context-menu/context-menu';
 
 const categoryName = "Studies";
 
@@ -147,4 +151,5 @@ export const register = (pluginConfig: PluginConfig) => {
         return elms;
     });
 
+    addMenuActionSet(PATIENT_SAMPLE_MENU, patientSampleActionSet);
 };
