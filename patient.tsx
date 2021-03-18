@@ -27,7 +27,10 @@ import { matchPath } from "react-router";
 import { ServiceRepository } from "~/services/services";
 
 import { PATIENT_PANEL_CURRENT_UUID, sampleTrackerPatientType } from './patientList';
-import { SAMPLE_LIST_PANEL_ID, sampleListPanelActions, sampleBaseRoutePath } from './sampleList';
+import {
+    SAMPLE_LIST_PANEL_ID, sampleListPanelActions,
+    sampleBaseRoutePath, sampleListPanelColumns
+} from './sampleList';
 import { studyRoutePath } from './studyList';
 
 export const PATIENT_SAMPLE_MENU = "Sample Tracker - Patient Sample menu";
@@ -89,6 +92,7 @@ export const AddPatientMenuComponent = connect<{}, {}, MenuItemProps>(patientsMa
 
 export const openPatientPanel = (projectUuid: string) =>
     (dispatch: Dispatch) => {
+        dispatch(sampleListPanelActions.SET_COLUMNS({ columns: sampleListPanelColumns }));
         dispatch(propertiesActions.SET_PROPERTY({ key: PATIENT_PANEL_CURRENT_UUID, value: projectUuid }));
         dispatch(sampleListPanelActions.REQUEST_ITEMS());
     };

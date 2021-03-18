@@ -182,6 +182,7 @@ const createExtraction = (data: ExtractionCreateFormDialogData) =>
                 "sample_tracker:additional_id": data.additionalId,
                 "sample_tracker:state": data.state,
                 "sample_tracker:sample_uuid": data.sampleUuid,
+                "sample_tracker:batch_uuid": "",
             }
         };
         // const newProject =

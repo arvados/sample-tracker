@@ -49,6 +49,7 @@ export const studyListPanelColumns: DataColumns<string> = [
 
 export const openStudyListPanel = (dispatch: Dispatch) => {
     // dispatch(propertiesActions.SET_PROPERTY({ key: PROJECT_PANEL_CURRENT_UUID, value: projectUuid }));
+    dispatch(studyListPanelActions.SET_COLUMNS({ columns: studyListPanelColumns }));
     dispatch(studyListPanelActions.REQUEST_ITEMS());
 };
 

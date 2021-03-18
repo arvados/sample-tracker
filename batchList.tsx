@@ -23,18 +23,93 @@ import { progressIndicatorActions } from '~/store/progress-indicator/progress-in
 import { DataExplorer as DataExplorerState, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
 import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
 import { updateResources } from "~/store/resources/resources-actions";
-import { ResourceName } from '~/views-components/data-explorer/renderers';
+import { connect, DispatchProp } from 'react-redux';
+import { getResource } from "~/store/resources/resources";
+import { Typography } from '@material-ui/core';
+import { initialize } from 'redux-form';
+import { dialogActions } from "~/store/dialog/dialog-actions";
+import { AnalysisState } from './extraction';
+import { StudyPathId } from './patient';
+import { matchPath } from "react-router";
+import { studyRoutePath } from './studyList';
 
 export const BATCH_LIST_PANEL_ID = "batchPanel";
 export const batchListPanelActions = bindDataExplorerActions(BATCH_LIST_PANEL_ID);
 export const sampleTrackerBatchType = "sample_tracker:batch";
 export const batchListRoutePath = "/sampleTracker/Batches";
 export const batchRoutePath = batchListRoutePath + "/:uuid";
-
+export const BATCH_CREATE_FORM_NAME = "batchCreateFormName";
 
 enum BatchPanelColumnNames {
     NAME = "Name"
 }
+
+export interface BatchCreateFormDialogData {
+    ownerUuid: string;
+    selfUuid?: string;
+    name: string;
+    state: AnalysisState;
+    selections: {
+        extraction: GroupResource,
+        value: boolean,
+        startingValue: boolean,
+    }[];
+}
+
+export const BatchNameComponent = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<GroupResource>(props.uuid)(state.resources);
+        return resource;
+    })((resource: GroupResource & DispatchProp<any>) =>
+        <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }}
+            onClick={() => resource.dispatch<any>(openBatchCreateDialog(resource))}
+        >{resource.name}</Typography>);
+
+export const openBatchCreateDialog = (editExisting?: GroupResource) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const filters = new FilterBuilder()
+            .addEqual("properties.type", "sample_tracker:extraction")
+            .addEqual("properties.sample_tracker:state", "NEW")
+            .addEqual("properties.sample_tracker:batch_uuid", "");
+        const results = await services.groupsService.list({
+            filters: filters.getFilters()
+        });
+        const samples = await services.linkService.list({
+            filters: new FilterBuilder()
+                .addIn("uuid", results.items.map((item) => item.properties["sample_tracker:sample_uuid"]))
+                .getFilters()
+        });
+        console.log(samples);
+        const selections = results.items.map((item) => ({
+            extraction: item,
+            value: false,
+            startingValue: false
+        }));
+
+        const studyid = matchPath<StudyPathId>(getState().router.location!.pathname, { path: studyRoutePath, exact: true });
+
+        const formup: Partial<BatchCreateFormDialogData> = { selections, ownerUuid: studyid!.params.uuid };
+        if (editExisting) {
+            formup.selfUuid = editExisting.uuid;
+            formup.name = editExisting.name;
+            formup.state = editExisting.properties["sample_tracker:state"];
+            const results2 = await services.groupsService.list({
+                filters: new FilterBuilder()
+                    .addEqual("properties.type", "sample_tracker:extraction")
+                    .addEqual("properties.sample_tracker:batch_uuid", editExisting.uuid)
+                    .getFilters()
+            });
+            for (const item of results2.items) {
+                selections.push({
+                    extraction: item,
+                    value: true,
+                    startingValue: true
+                });
+            }
+        }
+        dispatch(initialize(BATCH_CREATE_FORM_NAME, formup));
+        dispatch(dialogActions.OPEN_DIALOG({ id: BATCH_CREATE_FORM_NAME, data: formup }));
+    };
 
 export const batchListPanelColumns: DataColumns<string> = [
     {
@@ -43,14 +118,9 @@ export const batchListPanelColumns: DataColumns<string> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
+        render: uuid => <BatchNameComponent uuid={uuid} />
     }
 ];
-
-export const openBatchListPanel = (dispatch: Dispatch) => {
-    // dispatch(propertiesActions.SET_PROPERTY({ key: PROJECT_PANEL_CURRENT_UUID, value: projectUuid }));
-    dispatch(batchListPanelActions.REQUEST_ITEMS());
-};
 
 export const BatchListMainPanel = () =>
     <DataExplorer
@@ -71,12 +141,6 @@ const setItems = (listResults: ListResults<GroupResource>) =>
     });
 
 const getFilters = (dataExplorer: DataExplorerState) => {
-    //    const columns = dataExplorer.columns as DataColumns<string>;
-    //    const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
-    //    const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
-    //    const activeStatusFilter = Object.keys(statusColumnFilters).find(
-    //        filterName => statusColumnFilters[filterName].selected
-    //    );
     const fb = new FilterBuilder();
     fb.addEqual("properties.type", sampleTrackerBatchType);
 
@@ -108,9 +172,6 @@ export class BatchListPanelMiddlewareService extends DataExplorerMiddlewareServi
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const response = await this.services.groupsService.list(getParams(dataExplorer));
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
-            for (const i of response.items) {
-                i.uuid = batchListRoutePath + "/" + i.uuid;
-            }
             api.dispatch(updateResources(response.items));
             api.dispatch(setItems(response));
         } catch (e) {

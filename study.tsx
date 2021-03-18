@@ -16,7 +16,7 @@ import { ProjectCreateFormDialogData } from '~/store/projects/project-create-act
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { ProjectNameField, ProjectDescriptionField } from '~/views-components/form-fields/project-form-fields';
 import { dialogActions } from "~/store/dialog/dialog-actions";
-import { MenuItem } from "@material-ui/core";
+import { MenuItem, Tabs, Tab } from "@material-ui/core";
 import { createProject } from "~/store/workbench/workbench-actions";
 import { reduxForm, initialize } from 'redux-form';
 import { withDialog } from "~/store/dialog/with-dialog";
@@ -24,9 +24,17 @@ import { ServiceRepository } from "~/services/services";
 
 import { sampleTrackerStudyType } from './studyList';
 
-import { PATIENT_LIST_PANEL_ID, STUDY_PANEL_CURRENT_UUID, patientListPanelActions } from './patientList';
+import {
+    PATIENT_LIST_PANEL_ID, STUDY_PANEL_CURRENT_UUID,
+    patientListPanelActions, patientListPanelColumns
+} from './patientList';
+
+import {
+    BATCH_LIST_PANEL_ID, batchListPanelActions, batchListPanelColumns
+} from './batchList';
 
 const STUDY_CREATE_FORM_NAME = "studyCreateFormName";
+const STUDY_PANEL_CURRENT_TAB = "studyPanelCurrentTab";
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -77,28 +85,59 @@ export const AddStudyMenuComponent = connect()(
 
 export const openStudyPanel = (projectUuid: string) =>
     (dispatch: Dispatch) => {
+        dispatch(patientListPanelActions.SET_COLUMNS({ columns: patientListPanelColumns }));
+        dispatch(batchListPanelActions.SET_COLUMNS({ columns: batchListPanelColumns }));
         dispatch(propertiesActions.SET_PROPERTY({ key: STUDY_PANEL_CURRENT_UUID, value: projectUuid }));
         dispatch(patientListPanelActions.REQUEST_ITEMS());
+        dispatch(batchListPanelActions.REQUEST_ITEMS());
     };
 
 interface StudyProps {
     studyUuid: string;
+    currentTab: number;
+    changeTab: (event: any, value: number) => void;
 }
 
 export const studyMapStateToProps = (state: RootState) => ({
     studyUuid: getProperty(STUDY_PANEL_CURRENT_UUID)(state.properties),
+    currentTab: getProperty(STUDY_PANEL_CURRENT_TAB)(state.properties) || 0,
 });
 
-export const StudyMainPanel = connect(studyMapStateToProps)(
-    ({ studyUuid }: StudyProps) =>
+export const studyDispatchToProps = (dispatch: Dispatch) => ({
+    changeTab: (event: any, value: number) => {
+        dispatch(propertiesActions.SET_PROPERTY({ key: STUDY_PANEL_CURRENT_TAB, value }));
+    }
+});
+
+// onChange={}
+export const StudyMainPanel = connect(studyMapStateToProps, studyDispatchToProps)(
+    ({ studyUuid, currentTab, changeTab }: StudyProps) =>
         <div>
-            <DataExplorer
-                id={PATIENT_LIST_PANEL_ID}
-                onRowClick={(uuid: string) => { }}
-                onRowDoubleClick={(uuid: string) => { }}
-                onContextMenu={(event: React.MouseEvent<HTMLElement>, resourceUuid: string) => { }}
-                contextMenuColumn={true}
-                dataTableDefaultView={
-                    <DataTableDefaultView />
-                } />
+            <Tabs
+                onChange={changeTab}
+                value={currentTab}>
+                <Tab key={`tab-label-patients`} disableRipple label="Patients" />
+                <Tab key={`tab-label-batches`} disableRipple label="Batches" />
+            </Tabs>
+
+            {currentTab === 0 &&
+                <DataExplorer
+                    id={PATIENT_LIST_PANEL_ID}
+                    onRowClick={(uuid: string) => { }}
+                    onRowDoubleClick={(uuid: string) => { }}
+                    onContextMenu={(event: React.MouseEvent<HTMLElement>, resourceUuid: string) => { }}
+                    contextMenuColumn={true}
+                    dataTableDefaultView={
+                        <DataTableDefaultView />
+                    } />}
+            {currentTab === 1 &&
+                <DataExplorer
+                    id={BATCH_LIST_PANEL_ID}
+                    onRowClick={(uuid: string) => { }}
+                    onRowDoubleClick={(uuid: string) => { }}
+                    onContextMenu={(event: React.MouseEvent<HTMLElement>, resourceUuid: string) => { }}
+                    contextMenuColumn={true}
+                    dataTableDefaultView={
+                        <DataTableDefaultView />
+                    } />}
         </div>);

@@ -23,7 +23,7 @@ import { addMenuActionSet } from '~/views-components/context-menu/context-menu';
 
 import {
     StudyListMainPanel,
-    studyListPanelColumns, studyListPanelActions, openStudyListPanel,
+    openStudyListPanel,
     StudyListPanelMiddlewareService, STUDY_LIST_PANEL_ID,
     studyListRoutePath, studyRoutePath
 } from './studyList';
@@ -34,7 +34,7 @@ import {
 import {
     PATIENT_LIST_PANEL_ID,
     PatientListPanelMiddlewareService,
-    patientListPanelColumns, patientListPanelActions, patientRoutePath, patientBaseRoutePath
+    patientRoutePath, patientBaseRoutePath
 } from './patientList';
 import {
     openPatientPanel, PatientMainPanel, PATIENT_SAMPLE_MENU, patientSampleActionSet,
@@ -43,7 +43,7 @@ import {
 
 import {
     SampleListPanelMiddlewareService,
-    SAMPLE_LIST_PANEL_ID, sampleListPanelColumns, sampleListPanelActions
+    SAMPLE_LIST_PANEL_ID,
 } from './sampleList';
 import {
     AddSampleMenuComponent, CreateSampleDialog
@@ -52,6 +52,10 @@ import {
 import {
     AddBatchMenuComponent, CreateBatchDialog
 } from './batch';
+import {
+    BatchListPanelMiddlewareService, BATCH_LIST_PANEL_ID,
+} from './batchList';
+
 
 import { CreateExtractionDialog } from './extraction';
 
@@ -96,7 +100,6 @@ export const register = (pluginConfig: PluginConfig) => {
         if (matchPath(pathname, { path: studyListRoutePath, exact: true })) {
             store.dispatch(handleFirstTimeLoad(
                 (dispatch: Dispatch) => {
-                    dispatch(studyListPanelActions.SET_COLUMNS({ columns: studyListPanelColumns }));
                     dispatch<any>(openStudyListPanel);
                     dispatch<any>(activateSidePanelTreeItem(categoryName));
                     dispatch<any>(setSidePanelBreadcrumbs(categoryName));
@@ -107,7 +110,6 @@ export const register = (pluginConfig: PluginConfig) => {
         if (studyid) {
             store.dispatch(handleFirstTimeLoad(
                 (dispatch: Dispatch) => {
-                    dispatch(patientListPanelActions.SET_COLUMNS({ columns: patientListPanelColumns }));
                     dispatch<any>(openStudyPanel(studyid.params.uuid));
                     // dispatch<any>(activateSidePanelTreeItem(categoryName));
                     // const name = getProperty(PATIENT_PANEL_CURRENT_UUID)(state.properties),
@@ -122,7 +124,6 @@ export const register = (pluginConfig: PluginConfig) => {
         if (patientid) {
             store.dispatch(handleFirstTimeLoad(
                 async (dispatch: Dispatch) => {
-                    dispatch(sampleListPanelActions.SET_COLUMNS({ columns: sampleListPanelColumns }));
                     dispatch<any>(openPatientPanel(patientid.params.uuid));
                     // dispatch<any>(activateSidePanelTreeItem(categoryName));
                     const patientrsc = await dispatch<any>(loadResource(patientid.params.uuid));
@@ -160,6 +161,9 @@ export const register = (pluginConfig: PluginConfig) => {
         ));
         elms.push(dataExplorerMiddleware(
             new SampleListPanelMiddlewareService(services, SAMPLE_LIST_PANEL_ID)
+        ));
+        elms.push(dataExplorerMiddleware(
+            new BatchListPanelMiddlewareService(services, BATCH_LIST_PANEL_ID)
         ));
 
         return elms;
