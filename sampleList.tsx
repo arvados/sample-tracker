@@ -7,11 +7,9 @@ import { ServiceRepository } from "~/services/services";
 import { MiddlewareAPI, Dispatch } from "redux";
 import { RootState } from '~/store/store';
 import { DispatchProp, connect } from 'react-redux';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { DataColumns } from '~/components/data-table/data-table';
 import { createTree } from '~/models/tree';
-import { ResourceName } from '~/views-components/data-explorer/renderers';
+// import { ResourceName } from '~/views-components/data-explorer/renderers';
 import { SortDirection } from '~/components/data-table/data-column';
 import { bindDataExplorerActions } from "~/store/data-explorer/data-explorer-action";
 
@@ -21,6 +19,7 @@ import {
     dataExplorerToListParams
 } from '~/store/data-explorer/data-explorer-middleware-service';
 import { LinkResource } from "~/models/link";
+import { GroupResource } from "~/models/group";
 import { ListResults } from '~/services/common-service/common-service';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
 import { DataExplorer as DataExplorerState, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
@@ -28,6 +27,7 @@ import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
 import { updateResources } from "~/store/resources/resources-actions";
 import { getProperty } from '~/store/properties/properties';
 import { getResource } from "~/store/resources/resources";
+import { propertiesActions } from "~/store/properties/properties-actions";
 
 export const SAMPLE_LIST_PANEL_ID = "sampleListPanel";
 export const sampleListPanelActions = bindDataExplorerActions(SAMPLE_LIST_PANEL_ID);
@@ -38,6 +38,7 @@ export const SAMPLE_PANEL_CURRENT_UUID = "SamplePanelCurrentUUID";
 export const sampleBaseRoutePath = "/SampleTracker/Sample";
 export const sampleRoutePath = sampleBaseRoutePath + "/:uuid";
 
+const PATIENT_PANEL_SAMPLES = "PATIENT_PANEL_SAMPLES";
 
 enum SamplePanelColumnNames {
     NAME = "Name",
@@ -48,8 +49,6 @@ enum SamplePanelColumnNames {
     FLOW_COMPLETED_AT = "Flow completed",
     COLLECTED_AT = "Collected",
     EXTRACTION_TYPE = "Extraction",
-    SEQUENCING_SENT = "Sent for sequencing",
-    SEQUENCING_COMPLETE = "Sequencing completed",
     TRACKER_STATE = "State",
     BATCH_ID = "Batch",
 }
@@ -78,22 +77,33 @@ export const TimestampComponent = connect(
         return { resource, propertyname: props.propertyname };
     })((props: { resource: LinkResource, propertyname: string } & DispatchProp<any>) => <span>{props.resource.properties[props.propertyname]}</span>);
 
-export const TextComponent = connect(
+export const MultiCellComponent = connect(
     (state: RootState, props: { uuid: string, propertyname: string }) => {
-        const resource = getResource<LinkResource>(props.uuid)(state.resources);
-        return { resource, propertyname: props.propertyname };
-    })((props: { resource: LinkResource, propertyname: string } & DispatchProp<any>) => <span>{props.resource.properties[props.propertyname]}</span>);
+        const reverse = getProperty<{ [key: string]: any[] }>(PATIENT_PANEL_SAMPLES)(state.properties);
+        let items = (reverse && reverse[props.uuid]) || [];
+        items = items.map(item => {
+            const rsc = getResource<GroupResource>(item)(state.resources);
+            return rsc || { uuid: "", properties: {} };
+        });
+        return { items, propertyname: props.propertyname };
+    })((props: { items: any[], propertyname: string } & DispatchProp<any>) => <>
+        {props.items.map(item =>
+            <div key={item.uuid} > {item.properties[props.propertyname]}</div>
+        )}
+    </>
+    );
+
 
 export const sampleListPanelColumns: DataColumns<string> = [
-    {
+    /*{
         name: SamplePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
-    },
-    /*{
+    },*/
+    {
         name: SamplePanelColumnNames.TIME_POINT,
         selected: true,
         configurable: true,
@@ -102,13 +112,21 @@ export const sampleListPanelColumns: DataColumns<string> = [
         render: uuid => <TimePointComponent uuid={uuid} />
     },
     {
+        name: SamplePanelColumnNames.COLLECTED_AT,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: createTree(),
+        render: uuid => <TimestampComponent uuid={uuid} propertyname="sample_tracker:collected_at" />
+    },
+    {
         name: SamplePanelColumnNames.COLLECTION_TYPE,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <CollectionTypeComponent uuid={uuid} />
-    },*/
+    },
     {
         name: SamplePanelColumnNames.SAMPLE_TYPE,
         selected: true,
@@ -116,14 +134,6 @@ export const sampleListPanelColumns: DataColumns<string> = [
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <SampleTypeComponent uuid={uuid} />
-    },
-    {
-        name: SamplePanelColumnNames.COLLECTED_AT,
-        selected: true,
-        configurable: true,
-        sortDirection: SortDirection.NONE,
-        filters: createTree(),
-        render: uuid => <TimestampComponent uuid={uuid} propertyname="sample_tracker:collected_at" />
     },
     {
         name: SamplePanelColumnNames.FLOW_STARTED_AT,
@@ -147,18 +157,10 @@ export const sampleListPanelColumns: DataColumns<string> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <span />
+        render: uuid => <MultiCellComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)} propertyname="sample_tracker:extraction_type" />
     },
     {
-        name: SamplePanelColumnNames.SEQUENCING_SENT,
-        selected: true,
-        configurable: true,
-        sortDirection: SortDirection.NONE,
-        filters: createTree(),
-        render: uuid => <span />
-    },
-    {
-        name: SamplePanelColumnNames.SEQUENCING_COMPLETE,
+        name: SamplePanelColumnNames.BATCH_ID,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
@@ -171,32 +173,9 @@ export const sampleListPanelColumns: DataColumns<string> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <span />
-    },
-    {
-        name: SamplePanelColumnNames.BATCH_ID,
-        selected: true,
-        configurable: true,
-        sortDirection: SortDirection.NONE,
-        filters: createTree(),
-        render: uuid => <span />
+        render: uuid => <MultiCellComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)} propertyname="sample_tracker:state" />
     }
 ];
-
-export interface TrackerProps {
-    className?: string;
-}
-
-export const SampleListPanel = ({ }: TrackerProps) =>
-    <DataExplorer
-        id={SAMPLE_LIST_PANEL_ID}
-        onRowClick={(uuid: string) => { }}
-        onRowDoubleClick={(uuid: string) => { }}
-        onContextMenu={(event: React.MouseEvent<HTMLElement>, resourceUuid: string) => { }}
-        contextMenuColumn={true}
-        dataTableDefaultView={
-            <DataTableDefaultView />
-        } />;
 
 const setItems = (listResults: ListResults<LinkResource>) =>
     sampleListPanelActions.SET_ITEMS({
@@ -204,7 +183,7 @@ const setItems = (listResults: ListResults<LinkResource>) =>
         items: listResults.items.map(resource => resource.uuid),
     });
 
-const getFilters = (dataExplorer: DataExplorerState, patientUuid: string) => {
+const getSampleFilters = (dataExplorer: DataExplorerState, patientUuid: string) => {
     const fb = new FilterBuilder();
     fb.addEqual("owner_uuid", patientUuid);
     fb.addEqual("link_class", sampleTrackerSampleType);
@@ -219,9 +198,30 @@ const getFilters = (dataExplorer: DataExplorerState, patientUuid: string) => {
     );
 };
 
-const getParams = (dataExplorer: DataExplorerState, patientUuid: string) => ({
+const getSampleParams = (dataExplorer: DataExplorerState, patientUuid: string) => ({
     ...dataExplorerToListParams(dataExplorer),
-    filters: getFilters(dataExplorer, patientUuid),
+    filters: getSampleFilters(dataExplorer, patientUuid),
+});
+
+
+const getExtractionFilters = (dataExplorer: DataExplorerState, patientUuid: string) => {
+    const fb = new FilterBuilder();
+    fb.addEqual("owner_uuid", patientUuid);
+    fb.addEqual("properties.type", sampleTrackerExtractionType);
+
+    const nameFilters = new FilterBuilder()
+        .addILike("name", dataExplorer.searchValue)
+        .getFilters();
+
+    return joinFilters(
+        fb.getFilters(),
+        nameFilters,
+    );
+};
+
+const getExtractionParams = (dataExplorer: DataExplorerState, patientUuid: string) => ({
+    ...dataExplorerToListParams(dataExplorer),
+    filters: getExtractionFilters(dataExplorer, patientUuid),
 });
 
 export class SampleListPanelMiddlewareService extends DataExplorerMiddlewareService {
@@ -241,12 +241,26 @@ export class SampleListPanelMiddlewareService extends DataExplorerMiddlewareServ
 
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-            const response = await this.services.linkService.list(getParams(dataExplorer, patientUuid));
+            const response = await this.services.linkService.list(getSampleParams(dataExplorer, patientUuid));
+            const response2 = await this.services.groupsService.list(getExtractionParams(dataExplorer, patientUuid));
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+
+            const reverse = {};
+            for (const i of response2.items) {
+                const sid = i.properties["sample_tracker:sample_uuid"];
+                const lst = reverse[sid] || [];
+                lst.push(i.uuid);
+                reverse[sid] = lst;
+            }
+            api.dispatch(propertiesActions.SET_PROPERTY({ key: PATIENT_PANEL_SAMPLES, value: reverse }));
+
+            api.dispatch(updateResources(response.items));
+
             for (const i of response.items) {
                 i.uuid = sampleBaseRoutePath + "/" + i.uuid;
             }
             api.dispatch(updateResources(response.items));
+            api.dispatch(updateResources(response2.items));
             api.dispatch(setItems(response));
         } catch (e) {
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));

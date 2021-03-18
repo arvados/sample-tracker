@@ -16,7 +16,7 @@ import { ContextMenuActionSet } from "~/views-components/context-menu/context-me
 import { openExtractionCreateDialog } from "./extraction";
 
 import { PATIENT_PANEL_CURRENT_UUID } from './patientList';
-import { SAMPLE_LIST_PANEL_ID, sampleListPanelActions } from './sampleList';
+import { SAMPLE_LIST_PANEL_ID, sampleListPanelActions, sampleBaseRoutePath } from './sampleList';
 
 export const PATIENT_SAMPLE_MENU = "Sample Tracker - Patient Sample menu";
 
@@ -54,7 +54,7 @@ export const patientSampleActionSet: ContextMenuActionSet = [[
     {
         name: "Add extraction",
         execute: (dispatch, resource) => {
-            dispatch<any>(openExtractionCreateDialog(resource.uuid));
+            dispatch<any>(openExtractionCreateDialog(resource.uuid.substr(sampleBaseRoutePath.length + 1)));
         }
     },
 ]];

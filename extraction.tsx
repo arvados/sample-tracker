@@ -13,20 +13,13 @@ import { RootState } from '~/store/store';
 import { TextField } from "~/components/text-field/text-field";
 import { getResource } from "~/store/resources/resources";
 import { FormControl, InputLabel } from '@material-ui/core';
-import {
-    patientBaseRoutePath, patientRoutePath
-} from './patientList';
-import {
-    sampleBaseRoutePath
-} from './sampleList';
-import { matchPath } from "react-router";
 import { MenuItem, Select } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { DispatchProp, connect } from 'react-redux';
 import { withStyles, WithStyles } from '@material-ui/core/styles';
 import { LinkResource } from "~/models/link";
-import { GroupResource } from "~/models/group";
+import { GroupClass, GroupResource } from "~/models/group";
 import { withDialog } from "~/store/dialog/with-dialog";
+import { sampleTrackerExtractionType } from "./sampleList";
 
 const EXTRACTION_CREATE_FORM_NAME = "extractionCreateFormName";
 
@@ -96,18 +89,22 @@ export const ExtractionTypeSelect = styles(
             </Select>
         </FormControl>);
 
+const mustBeDefined = (value: any) => value === undefined ? "Must be defined" : undefined;
+
 const ExtractionAddFields = () => <span>
 
     <InputLabel>Extraction type</InputLabel>
     <div>
         <Field
             name='extractionType'
-            component={ExtractionTypeSelect} />
+            component={ExtractionTypeSelect}
+            validate={mustBeDefined}
+        />
     </div>
 
     <InputLabel>Additional id</InputLabel>
     <Field
-        name='timePoint'
+        name='additionalId'
         component={TextField}
         type="number" />
 
@@ -129,6 +126,7 @@ const ExtractionAddFields = () => <span>
     <div><Field
         name='state'
         component={SampleStateSelect}
+        validate={mustBeDefined}
     /></div>
 
 </span>;
@@ -143,9 +141,15 @@ const DialogExtractionCreate = (props: DialogExtractionProps) =>
     />;
 
 const makeExtractionId = (data: ExtractionCreateFormDialogData, state: RootState): string => {
-    const rscSamp = getResource<LinkResource>(sampleBaseRoutePath + "/" + data.sampleUuid)(state.resources);
-    const rscPat = getResource<GroupResource>(patientBaseRoutePath + "/" + rscSamp!.ownerUuid)(state.resources);
+    const rscSamp = getResource<LinkResource>(data.sampleUuid)(state.resources);
+    const rscPat = getResource<GroupResource>(rscSamp!.ownerUuid)(state.resources);
     let id = rscPat!.name + "_" + data.extractionType + "_";
+
+    if (rscSamp!.properties["sample_tracker:sample_type"] === "tumor") {
+        id = id + "T";
+    } else {
+        id = id + "N";
+    }
 
     if (rscSamp!.properties["sample_tracker:time_point"] < 10) {
         id = id + "_0" + rscSamp!.properties["sample_tracker:time_point"];
@@ -157,29 +161,28 @@ const makeExtractionId = (data: ExtractionCreateFormDialogData, state: RootState
     } else {
         id = id + "_" + data.additionalId;
     }
-
     return id;
 };
 
 const createExtraction = (data: ExtractionCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-
+        const rscSamp = getResource<LinkResource>(data.sampleUuid)(getState().resources);
         dispatch(startSubmit(EXTRACTION_CREATE_FORM_NAME));
-        // const extractionId =
-        makeExtractionId(data, getState());
-        /*await services.linkService.create({
-            ownerUuid: data.patientUuid,
-            name: extractionId,
-            linkClass: extractionTrackerExtractionType,
+        const p = {
+            name: makeExtractionId(data, getState()),
+            ownerUuid: rscSamp!.ownerUuid,
+            groupClass: GroupClass.PROJECT,
             properties: {
-                "sample_tracker:collection_type": data.collectionType,
+                "type": sampleTrackerExtractionType,
                 "sample_tracker:extraction_type": data.extractionType,
-                "sample_tracker:collected_at": data.collectedAt,
-                "sample_tracker:time_point": data.timePoint,
-                "sample_tracker:flow_started_at": data.flowStartedAt,
-                "sample_tracker:flow_completed_at": data.flowCompletedAt,
-            },
-        });*/
+                "sample_tracker:additional_id": data.additionalId,
+                "sample_tracker:state": data.state,
+                "sample_tracker:sample_uuid": data.sampleUuid,
+            }
+        };
+        // const newProject =
+        await services.projectService.create(p);
+
         dispatch(dialogActions.CLOSE_DIALOG({ id: EXTRACTION_CREATE_FORM_NAME }));
         dispatch(reset(EXTRACTION_CREATE_FORM_NAME));
     };
@@ -198,30 +201,13 @@ export const CreateExtractionDialog = compose(
 
 export const openExtractionCreateDialog = (sampleUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(initialize(EXTRACTION_CREATE_FORM_NAME, { sampleUuid }));
-        dispatch(dialogActions.OPEN_DIALOG({ id: EXTRACTION_CREATE_FORM_NAME, data: {} }));
+        dispatch(initialize(EXTRACTION_CREATE_FORM_NAME,
+            {
+                sampleUuid,
+                additionalId: 1,
+                state: AnalysisState.NEW
+            }));
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: EXTRACTION_CREATE_FORM_NAME, data: {}
+        }));
     };
-
-
-export interface MenuItemProps {
-    className?: string;
-    patientUuid?: string;
-}
-
-export interface PatientPathId {
-    uuid: string;
-}
-
-export const extractionsMapStateToProps = (state: RootState) => {
-    const props: MenuItemProps = {};
-    const patientid = matchPath<PatientPathId>(state.router.location!.pathname, { path: patientRoutePath, exact: true });
-    if (patientid) {
-        props.patientUuid = patientid.params.uuid;
-    }
-    return props;
-};
-
-export const AddExtractionMenuComponent = connect<{}, {}, MenuItemProps>(extractionsMapStateToProps)(
-    ({ patientUuid, dispatch, className }: MenuItemProps & DispatchProp<any>) =>
-        <MenuItem className={className} onClick={() => dispatch(openExtractionCreateDialog(patientUuid!))} disabled={!patientUuid}>Add Extraction</MenuItem >
-);

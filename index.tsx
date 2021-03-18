@@ -17,6 +17,7 @@ import { Location } from 'history';
 import { handleFirstTimeLoad } from '~/store/workbench/workbench-actions';
 import { dataExplorerMiddleware } from "~/store/data-explorer/data-explorer-middleware";
 import { getResource } from "~/store/resources/resources";
+import { loadResource } from "~/store/resources/resources-actions";
 import { GroupResource } from "~/models/group";
 import { addMenuActionSet } from '~/views-components/context-menu/context-menu';
 
@@ -111,14 +112,14 @@ export const register = (pluginConfig: PluginConfig) => {
         const patientid = matchPath<StudyPathId>(pathname, { path: patientRoutePath, exact: true });
         if (patientid) {
             store.dispatch(handleFirstTimeLoad(
-                (dispatch: Dispatch) => {
+                async (dispatch: Dispatch) => {
                     dispatch(sampleListPanelActions.SET_COLUMNS({ columns: sampleListPanelColumns }));
                     dispatch<any>(openPatientPanel(patientid.params.uuid));
                     // dispatch<any>(activateSidePanelTreeItem(categoryName));
-                    const patientrsc = getResource<GroupResource>(pathname)(store.getState().resources);
+                    const patientrsc = await dispatch<any>(loadResource(patientid.params.uuid));
                     if (patientrsc) {
                         const studyid = studyListRoutePath + "/" + patientrsc.ownerUuid;
-                        const studyrsc = getResource<GroupResource>(studyid)(store.getState().resources);
+                        const studyrsc = await dispatch<any>(loadResource(patientrsc.ownerUuid));
                         if (studyrsc) {
                             dispatch<any>(setBreadcrumbs([{ label: categoryName, uuid: categoryName },
                             { label: studyrsc.name, uuid: studyid },

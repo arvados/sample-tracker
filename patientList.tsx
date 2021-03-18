@@ -187,6 +187,7 @@ export class PatientListPanelMiddlewareService extends DataExplorerMiddlewareSer
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const response = await this.services.groupsService.list(getParams(dataExplorer, studyUuid));
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+            api.dispatch(updateResources(response.items));
             for (const i of response.items) {
                 i.uuid = patientBaseRoutePath + "/" + i.uuid;
             }

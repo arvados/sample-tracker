@@ -20,7 +20,7 @@ import { matchPath } from "react-router";
 import { MenuItem, Select } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { getResource } from "~/store/resources/resources";
-import { sampleTrackerSampleType } from "./sampleList";
+import { sampleTrackerSampleType, sampleListPanelActions } from "./sampleList";
 import { DispatchProp, connect } from 'react-redux';
 import { withStyles, WithStyles } from '@material-ui/core/styles';
 import { GroupResource } from "~/models/group";
@@ -85,32 +85,42 @@ export const SampleTypeSelect = styles(
             </Select>
         </FormControl>);
 
+const mustBeDefined = (value: any) => value === undefined ? "Must be defined" : undefined;
+
 const SampleAddFields = () => <span>
 
     <InputLabel>Patient time point</InputLabel>
     <Field
         name='timePoint'
         component={TextField}
-        type="number" />
+        type="number"
+        validate={mustBeDefined}
+    />
 
     <InputLabel>Collection date</InputLabel>
     <Field
         name='collectedAt'
         component={TextField}
-        type="date" />
+        type="date"
+        validate={mustBeDefined}
+    />
 
     <InputLabel>Collection type</InputLabel>
     <div>
         <Field
             name='collectionType'
-            component={CollectionTypeSelect} />
+            component={CollectionTypeSelect}
+            validate={mustBeDefined}
+        />
     </div>
 
     <InputLabel>Sample type</InputLabel>
     <div>
         <Field
             name='sampleType'
-            component={SampleTypeSelect} />
+            component={SampleTypeSelect}
+            validate={mustBeDefined}
+        />
     </div>
     <InputLabel>Flow started at</InputLabel>
     <Field
@@ -172,6 +182,7 @@ const createSample = (data: SampleCreateFormDialogData) =>
         });
         dispatch(dialogActions.CLOSE_DIALOG({ id: SAMPLE_CREATE_FORM_NAME }));
         dispatch(reset(SAMPLE_CREATE_FORM_NAME));
+        dispatch(sampleListPanelActions.REQUEST_ITEMS());
     };
 
 export const CreateSampleDialog = compose(
