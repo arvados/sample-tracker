@@ -22,16 +22,25 @@ import { GroupResource } from "~/models/group";
 import { addMenuActionSet } from '~/views-components/context-menu/context-menu';
 
 import {
-    AddStudyMenuComponent, StudyListMainPanel, CreateStudyDialog,
+    StudyListMainPanel,
     studyListPanelColumns, studyListPanelActions, openStudyListPanel,
     StudyListPanelMiddlewareService, STUDY_LIST_PANEL_ID,
     studyListRoutePath, studyRoutePath
 } from './studyList';
 import {
-    AddPatientMenuComponent, CreatePatientDialog, PATIENT_LIST_PANEL_ID, StudyPathId,
+    openStudyPanel, StudyMainPanel, CreateStudyDialog, AddStudyMenuComponent
+} from './study';
+
+import {
+    PATIENT_LIST_PANEL_ID,
     PatientListPanelMiddlewareService,
     patientListPanelColumns, patientListPanelActions, patientRoutePath, patientBaseRoutePath
 } from './patientList';
+import {
+    openPatientPanel, PatientMainPanel, PATIENT_SAMPLE_MENU, patientSampleActionSet,
+    CreatePatientDialog, AddPatientMenuComponent, StudyPathId,
+} from './patient';
+
 import {
     SampleListPanelMiddlewareService,
     SAMPLE_LIST_PANEL_ID, sampleListPanelColumns, sampleListPanelActions
@@ -39,12 +48,11 @@ import {
 import {
     AddSampleMenuComponent, CreateSampleDialog
 } from './sample';
+
 import {
-    openStudyPanel, StudyMainPanel
-} from './study';
-import {
-    openPatientPanel, PatientMainPanel, PATIENT_SAMPLE_MENU, patientSampleActionSet
-} from './patient';
+    AddBatchMenuComponent, CreateBatchDialog
+} from './batch';
+
 import { CreateExtractionDialog } from './extraction';
 
 const categoryName = "Studies";
@@ -62,6 +70,7 @@ export const register = (pluginConfig: PluginConfig) => {
         elms.push(<AddStudyMenuComponent className={menuItemClass} />);
         elms.push(<AddPatientMenuComponent className={menuItemClass} />);
         elms.push(<AddSampleMenuComponent className={menuItemClass} />);
+        elms.push(<AddBatchMenuComponent className={menuItemClass} />);
         return elms;
     });
 
@@ -140,6 +149,7 @@ export const register = (pluginConfig: PluginConfig) => {
     pluginConfig.dialogs.push(<CreatePatientDialog />);
     pluginConfig.dialogs.push(<CreateSampleDialog />);
     pluginConfig.dialogs.push(<CreateExtractionDialog />);
+    pluginConfig.dialogs.push(<CreateBatchDialog />);
 
     pluginConfig.middlewares.push((elms, services) => {
         elms.push(dataExplorerMiddleware(

@@ -28,10 +28,11 @@ enum ExtractionType {
     RNA = "RNA",
 }
 
-enum AnalysisState {
+export enum AnalysisState {
     NEW = "NEW",
     AT_SEQUENCING = "AT_SEQUENCING",
     SEQUENCED = "SEQUENCED",
+    SEQ_FAILED = "SEQ_FAILED",
     ANALYSIS_COMPLETE = "ANALYSIS_COMPLETE"
 }
 
@@ -68,6 +69,9 @@ export const SampleStateSelect = styles(
 		</MenuItem>
                 <MenuItem value={AnalysisState.SEQUENCED}>
                     SEQUENCED
+		</MenuItem>
+                <MenuItem value={AnalysisState.SEQ_FAILED}>
+                    SEQ_FAILED
 		</MenuItem>
                 <MenuItem value={AnalysisState.ANALYSIS_COMPLETE}>
                     ANALYSIS_COMPLETE

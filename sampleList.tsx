@@ -165,7 +165,7 @@ export const sampleListPanelColumns: DataColumns<string> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <span />
+        render: uuid => <MultiCellComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)} propertyname="sample_tracker:batch_uuid" />
     },
     {
         name: SamplePanelColumnNames.TRACKER_STATE,

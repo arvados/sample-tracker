@@ -3,20 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { InjectedFormProps } from 'redux-form';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
-import { ProjectCreateFormDialogData } from '~/store/projects/project-create-actions';
-import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { ProjectNameField, ProjectDescriptionField } from '~/views-components/form-fields/project-form-fields';
-import { dialogActions } from "~/store/dialog/dialog-actions";
 import { ServiceRepository } from "~/services/services";
-import { compose, MiddlewareAPI, Dispatch } from "redux";
-import { reduxForm, initialize } from 'redux-form';
-import { withDialog } from "~/store/dialog/with-dialog";
+import { MiddlewareAPI, Dispatch } from "redux";
 import { RootState } from '~/store/store';
-import { DispatchProp, connect } from 'react-redux';
-import { MenuItem } from "@material-ui/core";
-import { createProject } from "~/store/workbench/workbench-actions";
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { DataColumns } from '~/components/data-table/data-table';
@@ -36,62 +25,12 @@ import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
 import { updateResources } from "~/store/resources/resources-actions";
 import { ResourceName } from '~/views-components/data-explorer/renderers';
 
-const STUDY_CREATE_FORM_NAME = "studyCreateFormName";
 export const STUDY_LIST_PANEL_ID = "studyPanel";
 export const studyListPanelActions = bindDataExplorerActions(STUDY_LIST_PANEL_ID);
 export const sampleTrackerStudyType = "sample_tracker:study";
 export const studyListRoutePath = "/sampleTracker/Studies";
 export const studyRoutePath = studyListRoutePath + "/:uuid";
 
-export interface ProjectCreateFormDialogData {
-    ownerUuid: string;
-    name: string;
-    description: string;
-}
-
-type DialogProjectProps = WithDialogProps<{}> & InjectedFormProps<ProjectCreateFormDialogData>;
-
-const StudyAddFields = () => <span>
-    <ProjectNameField label="Study name" />
-    <ProjectDescriptionField />
-</span>;
-
-const DialogStudyCreate = (props: DialogProjectProps) =>
-    <FormDialog
-        dialogTitle='New study'
-        formFields={StudyAddFields}
-        submitLabel='Create a Study'
-        {...props}
-    />;
-
-export const CreateStudyDialog = compose(
-    withDialog(STUDY_CREATE_FORM_NAME),
-    reduxForm<ProjectCreateFormDialogData>({
-        form: STUDY_CREATE_FORM_NAME,
-        onSubmit: (data, dispatch) => {
-            data.properties = { type: sampleTrackerStudyType };
-            dispatch(createProject(data));
-        }
-    })
-)(DialogStudyCreate);
-
-
-interface TrackerProps {
-    className?: string;
-}
-
-const studiesMapStateToProps = (state: RootState) => ({});
-
-const openStudyCreateDialog = () =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(initialize(STUDY_CREATE_FORM_NAME, {}));
-        dispatch(dialogActions.OPEN_DIALOG({ id: STUDY_CREATE_FORM_NAME, data: {} }));
-    };
-
-export const AddStudyMenuComponent = connect(studiesMapStateToProps)(
-    ({ dispatch, className }: TrackerProps & DispatchProp<any>) =>
-        <MenuItem className={className} onClick={() => dispatch(openStudyCreateDialog())}>Add Study</MenuItem >
-);
 
 enum StudyPanelColumnNames {
     NAME = "Name"
@@ -113,17 +52,16 @@ export const openStudyListPanel = (dispatch: Dispatch) => {
     dispatch(studyListPanelActions.REQUEST_ITEMS());
 };
 
-export const StudyListMainPanel = connect(studiesMapStateToProps)(
-    ({ }: TrackerProps) =>
-        <DataExplorer
-            id={STUDY_LIST_PANEL_ID}
-            onRowClick={(uuid: string) => { }}
-            onRowDoubleClick={(uuid: string) => { }}
-            onContextMenu={(event: React.MouseEvent<HTMLElement>, resourceUuid: string) => { }}
-            contextMenuColumn={true}
-            dataTableDefaultView={
-                <DataTableDefaultView />
-            } />);
+export const StudyListMainPanel = () =>
+    <DataExplorer
+        id={STUDY_LIST_PANEL_ID}
+        onRowClick={(uuid: string) => { }}
+        onRowDoubleClick={(uuid: string) => { }}
+        onContextMenu={(event: React.MouseEvent<HTMLElement>, resourceUuid: string) => { }}
+        contextMenuColumn={true}
+        dataTableDefaultView={
+            <DataTableDefaultView />
+        } />;
 
 
 const setItems = (listResults: ListResults<GroupResource>) =>

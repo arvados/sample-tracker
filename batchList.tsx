@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-
 import { ServiceRepository } from "~/services/services";
 import { MiddlewareAPI, Dispatch } from "redux";
 import { RootState } from '~/store/store';
@@ -11,7 +10,6 @@ import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { DataColumns } from '~/components/data-table/data-table';
 import { createTree } from '~/models/tree';
-import { ResourceName } from '~/views-components/data-explorer/renderers';
 import { SortDirection } from '~/components/data-table/data-column';
 import { bindDataExplorerActions } from "~/store/data-explorer/data-explorer-action";
 import {
@@ -24,24 +22,23 @@ import { ListResults } from '~/services/common-service/common-service';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
 import { DataExplorer as DataExplorerState, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
 import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
-import { getProperty } from '~/store/properties/properties';
 import { updateResources } from "~/store/resources/resources-actions";
+import { ResourceName } from '~/views-components/data-explorer/renderers';
 
-export const PATIENT_LIST_PANEL_ID = "patientListPanel";
-export const patientListPanelActions = bindDataExplorerActions(PATIENT_LIST_PANEL_ID);
-export const sampleTrackerPatientType = "sample_tracker:patient";
-export const STUDY_PANEL_CURRENT_UUID = "StudyPanelCurrentUUID";
-export const PATIENT_PANEL_CURRENT_UUID = "PatientPanelCurrentUUID";
-export const patientBaseRoutePath = "/SampleTracker/Patient";
-export const patientRoutePath = patientBaseRoutePath + "/:uuid";
+export const BATCH_LIST_PANEL_ID = "batchPanel";
+export const batchListPanelActions = bindDataExplorerActions(BATCH_LIST_PANEL_ID);
+export const sampleTrackerBatchType = "sample_tracker:batch";
+export const batchListRoutePath = "/sampleTracker/Batches";
+export const batchRoutePath = batchListRoutePath + "/:uuid";
 
-enum PatientPanelColumnNames {
+
+enum BatchPanelColumnNames {
     NAME = "Name"
 }
 
-export const patientListPanelColumns: DataColumns<string> = [
+export const batchListPanelColumns: DataColumns<string> = [
     {
-        name: PatientPanelColumnNames.NAME,
+        name: BatchPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
@@ -50,9 +47,14 @@ export const patientListPanelColumns: DataColumns<string> = [
     }
 ];
 
-export const PatientListPanel = () =>
+export const openBatchListPanel = (dispatch: Dispatch) => {
+    // dispatch(propertiesActions.SET_PROPERTY({ key: PROJECT_PANEL_CURRENT_UUID, value: projectUuid }));
+    dispatch(batchListPanelActions.REQUEST_ITEMS());
+};
+
+export const BatchListMainPanel = () =>
     <DataExplorer
-        id={PATIENT_LIST_PANEL_ID}
+        id={BATCH_LIST_PANEL_ID}
         onRowClick={(uuid: string) => { }}
         onRowDoubleClick={(uuid: string) => { }}
         onContextMenu={(event: React.MouseEvent<HTMLElement>, resourceUuid: string) => { }}
@@ -61,16 +63,22 @@ export const PatientListPanel = () =>
             <DataTableDefaultView />
         } />;
 
+
 const setItems = (listResults: ListResults<GroupResource>) =>
-    patientListPanelActions.SET_ITEMS({
+    batchListPanelActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
         items: listResults.items.map(resource => resource.uuid),
     });
 
-const getFilters = (dataExplorer: DataExplorerState, studyUuid: string) => {
+const getFilters = (dataExplorer: DataExplorerState) => {
+    //    const columns = dataExplorer.columns as DataColumns<string>;
+    //    const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
+    //    const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
+    //    const activeStatusFilter = Object.keys(statusColumnFilters).find(
+    //        filterName => statusColumnFilters[filterName].selected
+    //    );
     const fb = new FilterBuilder();
-    fb.addEqual("owner_uuid", studyUuid);
-    fb.addEqual("properties.type", sampleTrackerPatientType);
+    fb.addEqual("properties.type", sampleTrackerBatchType);
 
     const nameFilters = new FilterBuilder()
         .addILike("name", dataExplorer.searchValue)
@@ -82,12 +90,12 @@ const getFilters = (dataExplorer: DataExplorerState, studyUuid: string) => {
     );
 };
 
-const getParams = (dataExplorer: DataExplorerState, studyUuid: string) => ({
+const getParams = (dataExplorer: DataExplorerState) => ({
     ...dataExplorerToListParams(dataExplorer),
-    filters: getFilters(dataExplorer, studyUuid),
+    filters: getFilters(dataExplorer),
 });
 
-export class PatientListPanelMiddlewareService extends DataExplorerMiddlewareService {
+export class BatchListPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
@@ -96,25 +104,18 @@ export class PatientListPanelMiddlewareService extends DataExplorerMiddlewareSer
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
 
-        const studyUuid = getProperty<string>(STUDY_PANEL_CURRENT_UUID)(state.properties);
-
-        if (!studyUuid) {
-            return;
-        }
-
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-            const response = await this.services.groupsService.list(getParams(dataExplorer, studyUuid));
+            const response = await this.services.groupsService.list(getParams(dataExplorer));
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
-            api.dispatch(updateResources(response.items));
             for (const i of response.items) {
-                i.uuid = patientBaseRoutePath + "/" + i.uuid;
+                i.uuid = batchListRoutePath + "/" + i.uuid;
             }
             api.dispatch(updateResources(response.items));
             api.dispatch(setItems(response));
         } catch (e) {
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
-            api.dispatch(patientListPanelActions.SET_ITEMS({
+            api.dispatch(batchListPanelActions.SET_ITEMS({
                 items: [],
                 itemsAvailable: 0,
                 page: 0,
