@@ -9,9 +9,12 @@ import { RootState } from '~/store/store';
 import { DispatchProp, connect } from 'react-redux';
 import { DataColumns } from '~/components/data-table/data-table';
 import { createTree } from '~/models/tree';
-// import { ResourceName } from '~/views-components/data-explorer/renderers';
 import { SortDirection } from '~/components/data-table/data-column';
 import { bindDataExplorerActions } from "~/store/data-explorer/data-explorer-action";
+import { Typography } from '@material-ui/core';
+import { initialize } from 'redux-form';
+import { dialogActions } from "~/store/dialog/dialog-actions";
+import { Resource } from '~/models/resource';
 
 import {
     DataExplorerMiddlewareService,
@@ -38,7 +41,16 @@ export const SAMPLE_PANEL_CURRENT_UUID = "SamplePanelCurrentUUID";
 export const sampleBaseRoutePath = "/SampleTracker/Sample";
 export const sampleRoutePath = sampleBaseRoutePath + "/:uuid";
 
+export const EXTRACTION_CREATE_FORM_NAME = "extractionCreateFormName";
 const PATIENT_PANEL_SAMPLES = "PATIENT_PANEL_SAMPLES";
+
+export enum AnalysisState {
+    NEW = "NEW",
+    AT_SEQUENCING = "AT_SEQUENCING",
+    SEQUENCED = "SEQUENCED",
+    SEQ_FAILED = "SEQ_FAILED",
+    ANALYSIS_COMPLETE = "ANALYSIS_COMPLETE"
+}
 
 enum SamplePanelColumnNames {
     NAME = "Name",
@@ -53,63 +65,95 @@ enum SamplePanelColumnNames {
     BATCH_ID = "Batch",
 }
 
-export const TimePointComponent = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<LinkResource>(props.uuid)(state.resources);
-        return resource;
-    })((resource: LinkResource & DispatchProp<any>) => <span>{resource.properties["sample_tracker:time_point"]}</span>);
-
-export const CollectionTypeComponent = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<LinkResource>(props.uuid)(state.resources);
-        return resource;
-    })((resource: LinkResource & DispatchProp<any>) => <span>{resource.properties["sample_tracker:collection_type"]}</span>);
-
-export const SampleTypeComponent = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<LinkResource>(props.uuid)(state.resources);
-        return resource;
-    })((resource: LinkResource & DispatchProp<any>) => <span>{resource.properties["sample_tracker:sample_type"]}</span>);
-
 export const TimestampComponent = connect(
     (state: RootState, props: { uuid: string, propertyname: string }) => {
         const resource = getResource<LinkResource>(props.uuid)(state.resources);
         return { resource, propertyname: props.propertyname };
     })((props: { resource: LinkResource, propertyname: string } & DispatchProp<any>) => <span>{props.resource.properties[props.propertyname]}</span>);
 
-export const MultiCellComponent = connect(
-    (state: RootState, props: { uuid: string, propertyname: string }) => {
+interface PropertiedResource extends Resource {
+    name: string;
+    properties: any;
+}
+
+export const openExtractionCreateDialog = (sampleUuid: string, editExisting?: PropertiedResource) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        if (editExisting) {
+            dispatch(initialize(EXTRACTION_CREATE_FORM_NAME,
+                {
+                    sampleUuid,
+                    additionalId: editExisting.properties["sample_tracker:additional_id"],
+                    state: editExisting.properties["sample_tracker:state"],
+                    extractionType: editExisting.properties["sample_tracker:extraction_type"],
+                    batchUuid: editExisting.properties["sample_tracker:batch_uuid"],
+                    uuidSelf: editExisting.uuid,
+                }));
+        } else {
+            dispatch(initialize(EXTRACTION_CREATE_FORM_NAME,
+                {
+                    sampleUuid,
+                    additionalId: 1,
+                    state: AnalysisState.NEW
+                }));
+        }
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: EXTRACTION_CREATE_FORM_NAME, data: { updating: editExisting !== undefined, }
+        }));
+    };
+
+export const ExtractionComponent = connect((state: RootState, props: { resource: PropertiedResource }) => props)(
+    (props: { resource: PropertiedResource } & DispatchProp<any>) =>
+        <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }}
+            onClick={() => props.dispatch<any>(openExtractionCreateDialog(props.resource.properties["sample_tracker:sample_uuid"], props.resource))}
+        >{props.resource.name}</Typography>);
+
+
+export const PropertyComponent = (props: { resource: PropertiedResource, propertyname: string }) =>
+    <span>{props.resource.properties[props.propertyname]}</span>;
+
+export const ResourceComponent = connect(
+    (state: RootState, props: { uuid: string, render: (item: PropertiedResource) => React.ReactElement<any> }) => {
+        const resource = getResource<PropertiedResource>(props.uuid)(state.resources);
+        return { resource, render: props.render };
+    })((props: { resource: PropertiedResource, render: (item: PropertiedResource) => React.ReactElement<any> } & DispatchProp<any>) => props.render(props.resource));
+
+// {props.resource.properties["sample_tracker:sample_type"]}</span>);
+
+export const MultiResourceComponent = connect(
+    (state: RootState, props: { uuid: string, render: (item: PropertiedResource) => React.ReactElement<any> }) => {
         const reverse = getProperty<{ [key: string]: any[] }>(PATIENT_PANEL_SAMPLES)(state.properties);
         let items = (reverse && reverse[props.uuid]) || [];
         items = items.map(item => {
             const rsc = getResource<GroupResource>(item)(state.resources);
             return rsc || { uuid: "", properties: {} };
         });
-        return { items, propertyname: props.propertyname };
-    })((props: { items: any[], propertyname: string } & DispatchProp<any>) => <>
+        return { items, render: props.render };
+    })((props: { items: any[], render: (item: PropertiedResource) => React.ReactElement<any> } & DispatchProp<any>) => <>
         {props.items.map(item =>
-            <div key={item.uuid} > {item.properties[props.propertyname]}</div>
+            <div key={item.uuid} > {props.render(item)}</div>
         )}
     </>
     );
 
 
 export const sampleListPanelColumns: DataColumns<string> = [
-    /*{
-        name: SamplePanelColumnNames.NAME,
+    {
+        name: SamplePanelColumnNames.SAMPLE_TYPE,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <ResourceName uuid={uuid} />
-    },*/
+        render: uuid => <ResourceComponent uuid={uuid}
+            render={rsc => <PropertyComponent resource={rsc} propertyname="sample_tracker:sample_type" />} />
+    },
     {
         name: SamplePanelColumnNames.TIME_POINT,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <TimePointComponent uuid={uuid} />
+        render: uuid => <ResourceComponent uuid={uuid}
+            render={rsc => <PropertyComponent resource={rsc} propertyname="sample_tracker:time_point" />} />
     },
     {
         name: SamplePanelColumnNames.COLLECTED_AT,
@@ -120,20 +164,13 @@ export const sampleListPanelColumns: DataColumns<string> = [
         render: uuid => <TimestampComponent uuid={uuid} propertyname="sample_tracker:collected_at" />
     },
     {
-        name: SamplePanelColumnNames.COLLECTION_TYPE,
+        name: SamplePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <CollectionTypeComponent uuid={uuid} />
-    },
-    {
-        name: SamplePanelColumnNames.SAMPLE_TYPE,
-        selected: true,
-        configurable: true,
-        sortDirection: SortDirection.NONE,
-        filters: createTree(),
-        render: uuid => <SampleTypeComponent uuid={uuid} />
+        render: uuid => <ResourceComponent uuid={uuid}
+            render={rsc => <span>{rsc.name}</span>} />
     },
     {
         name: SamplePanelColumnNames.FLOW_STARTED_AT,
@@ -157,7 +194,8 @@ export const sampleListPanelColumns: DataColumns<string> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <MultiCellComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)} propertyname="sample_tracker:extraction_type" />
+        render: uuid => <MultiResourceComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)}
+            render={rsc => <ExtractionComponent resource={rsc} />} />
     },
     {
         name: SamplePanelColumnNames.BATCH_ID,
@@ -165,7 +203,8 @@ export const sampleListPanelColumns: DataColumns<string> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <MultiCellComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)} propertyname="sample_tracker:batch_uuid" />
+        render: uuid => <MultiResourceComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)}
+            render={rsc => <PropertyComponent resource={rsc} propertyname="sample_tracker:batch_uuid" />} />
     },
     {
         name: SamplePanelColumnNames.TRACKER_STATE,
@@ -173,7 +212,8 @@ export const sampleListPanelColumns: DataColumns<string> = [
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <MultiCellComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)} propertyname="sample_tracker:state" />
+        render: uuid => <MultiResourceComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)}
+            render={rsc => <PropertyComponent resource={rsc} propertyname="sample_tracker:state" />} />
     }
 ];
 

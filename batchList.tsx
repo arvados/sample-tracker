@@ -28,7 +28,7 @@ import { getResource } from "~/store/resources/resources";
 import { Typography } from '@material-ui/core';
 import { initialize } from 'redux-form';
 import { dialogActions } from "~/store/dialog/dialog-actions";
-import { AnalysisState } from './extraction';
+import { AnalysisState } from './sampleList';
 import { StudyPathId } from './patient';
 import { matchPath } from "react-router";
 import { studyRoutePath } from './studyList';

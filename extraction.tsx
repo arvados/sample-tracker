@@ -8,7 +8,7 @@ import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { ServiceRepository } from "~/services/services";
 import { compose, Dispatch } from "redux";
-import { reduxForm, WrappedFieldProps, initialize, InjectedFormProps, Field, startSubmit, reset } from 'redux-form';
+import { reduxForm, WrappedFieldProps, InjectedFormProps, Field, startSubmit, reset } from 'redux-form';
 import { RootState } from '~/store/store';
 import { TextField } from "~/components/text-field/text-field";
 import { getResource } from "~/store/resources/resources";
@@ -19,21 +19,11 @@ import { withStyles, WithStyles } from '@material-ui/core/styles';
 import { LinkResource } from "~/models/link";
 import { GroupClass, GroupResource } from "~/models/group";
 import { withDialog } from "~/store/dialog/with-dialog";
-import { sampleTrackerExtractionType } from "./sampleList";
-
-const EXTRACTION_CREATE_FORM_NAME = "extractionCreateFormName";
+import { sampleTrackerExtractionType, EXTRACTION_CREATE_FORM_NAME, AnalysisState } from "./sampleList";
 
 enum ExtractionType {
     DNA = "DNA",
     RNA = "RNA",
-}
-
-export enum AnalysisState {
-    NEW = "NEW",
-    AT_SEQUENCING = "AT_SEQUENCING",
-    SEQUENCED = "SEQUENCED",
-    SEQ_FAILED = "SEQ_FAILED",
-    ANALYSIS_COMPLETE = "ANALYSIS_COMPLETE"
 }
 
 export interface ExtractionCreateFormDialogData {
@@ -44,9 +34,10 @@ export interface ExtractionCreateFormDialogData {
     sequencingCompleted: string;
     state: AnalysisState;
     batchUuid: string;
+    uuidSelf: string;
 }
 
-type DialogExtractionProps = WithDialogProps<{}> & InjectedFormProps<ExtractionCreateFormDialogData>;
+type DialogExtractionProps = WithDialogProps<{ updating: boolean }> & InjectedFormProps<ExtractionCreateFormDialogData>;
 
 type CssRules = 'selectWidth';
 
@@ -138,9 +129,9 @@ const ExtractionAddFields = () => <span>
 
 const DialogExtractionCreate = (props: DialogExtractionProps) =>
     <FormDialog
-        dialogTitle='Add extraction'
+        dialogTitle={props.data.updating ? 'Edit sample' : 'Add sample'}
         formFields={ExtractionAddFields}
-        submitLabel='Add a extraction'
+        submitLabel={props.data.updating ? 'Update sample' : 'Add sample'}
         {...props}
     />;
 
@@ -185,9 +176,11 @@ const createExtraction = (data: ExtractionCreateFormDialogData) =>
                 "sample_tracker:batch_uuid": "",
             }
         };
-        // const newProject =
-        await services.projectService.create(p);
-
+        if (data.uuidSelf) {
+            await services.projectService.update(data.uuidSelf, p);
+        } else {
+            await services.projectService.create(p);
+        }
         dispatch(dialogActions.CLOSE_DIALOG({ id: EXTRACTION_CREATE_FORM_NAME }));
         dispatch(reset(EXTRACTION_CREATE_FORM_NAME));
     };
@@ -202,17 +195,3 @@ export const CreateExtractionDialog = compose(
         }
     })
 )(DialogExtractionCreate);
-
-
-export const openExtractionCreateDialog = (sampleUuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(initialize(EXTRACTION_CREATE_FORM_NAME,
-            {
-                sampleUuid,
-                additionalId: 1,
-                state: AnalysisState.NEW
-            }));
-        dispatch(dialogActions.OPEN_DIALOG({
-            id: EXTRACTION_CREATE_FORM_NAME, data: {}
-        }));
-    };

@@ -13,7 +13,6 @@ import { DataTableDefaultView } from '~/components/data-table-default-view/data-
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ResourceKind } from '~/models/resource';
 import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
-import { openExtractionCreateDialog } from "./extraction";
 import { InjectedFormProps, reduxForm, initialize } from 'redux-form';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { ProjectCreateFormDialogData } from '~/store/projects/project-create-actions';
@@ -29,7 +28,8 @@ import { ServiceRepository } from "~/services/services";
 import { PATIENT_PANEL_CURRENT_UUID, sampleTrackerPatientType } from './patientList';
 import {
     SAMPLE_LIST_PANEL_ID, sampleListPanelActions,
-    sampleBaseRoutePath, sampleListPanelColumns
+    sampleBaseRoutePath, sampleListPanelColumns,
+    openExtractionCreateDialog
 } from './sampleList';
 import { studyRoutePath } from './studyList';
 
