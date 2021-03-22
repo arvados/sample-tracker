@@ -115,7 +115,7 @@ export const ResourceComponent = connect(
     (state: RootState, props: { uuid: string, render: (item: PropertiedResource) => React.ReactElement<any> }) => {
         const resource = getResource<PropertiedResource>(props.uuid)(state.resources);
         return { resource, render: props.render };
-    })((props: { resource: PropertiedResource, render: (item: PropertiedResource) => React.ReactElement<any> } & DispatchProp<any>) => props.render(props.resource));
+    })((props: { resource: PropertiedResource, render: (item: PropertiedResource) => React.ReactElement<any> } & DispatchProp<any>) => (props.resource ? props.render(props.resource) : <br />));
 
 // {props.resource.properties["sample_tracker:sample_type"]}</span>);
 
@@ -204,7 +204,8 @@ export const sampleListPanelColumns: DataColumns<string> = [
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <MultiResourceComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)}
-            render={rsc => <PropertyComponent resource={rsc} propertyname="sample_tracker:batch_uuid" />} />
+            render={rsc => <ResourceComponent uuid={rsc.properties["sample_tracker:batch_uuid"]}
+                render={rsc2 => <span>{rsc2.name}</span>} />} />
     },
     {
         name: SamplePanelColumnNames.TRACKER_STATE,
@@ -286,13 +287,24 @@ export class SampleListPanelMiddlewareService extends DataExplorerMiddlewareServ
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
 
             const reverse = {};
+            const batches = [];
             for (const i of response2.items) {
                 const sid = i.properties["sample_tracker:sample_uuid"];
                 const lst = reverse[sid] || [];
                 lst.push(i.uuid);
                 reverse[sid] = lst;
+                const batch = i.properties["sample_tracker:batch_uuid"];
+                if (batch) {
+                    batches.push(batch);
+                }
             }
             api.dispatch(propertiesActions.SET_PROPERTY({ key: PATIENT_PANEL_SAMPLES, value: reverse }));
+
+            const response3 = await this.services.groupsService.list({
+                filters: new FilterBuilder()
+                    .addIn("uuid", batches)
+                    .getFilters()
+            });
 
             api.dispatch(updateResources(response.items));
 
@@ -301,6 +313,7 @@ export class SampleListPanelMiddlewareService extends DataExplorerMiddlewareServ
             }
             api.dispatch(updateResources(response.items));
             api.dispatch(updateResources(response2.items));
+            api.dispatch(updateResources(response3.items));
             api.dispatch(setItems(response));
         } catch (e) {
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
