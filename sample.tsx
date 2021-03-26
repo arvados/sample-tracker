@@ -8,7 +8,7 @@ import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { ServiceRepository } from "~/services/services";
 import { compose, Dispatch } from "redux";
-import { reduxForm, WrappedFieldProps, InjectedFormProps, Field, reset, startSubmit, initialize } from 'redux-form';
+import { reduxForm, WrappedFieldProps, InjectedFormProps, Field, reset, startSubmit } from 'redux-form';
 import { withDialog } from "~/store/dialog/with-dialog";
 import { RootState } from '~/store/store';
 import { TextField } from "~/components/text-field/text-field";
@@ -20,12 +20,10 @@ import { matchPath } from "react-router";
 import { MenuItem, Select } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { getResource } from "~/store/resources/resources";
-import { sampleTrackerSampleType, sampleListPanelActions } from "./sampleList";
+import { sampleTrackerSampleType, sampleListPanelActions, SAMPLE_CREATE_FORM_NAME, openSampleCreateDialog } from "./sampleList";
 import { DispatchProp, connect } from 'react-redux';
 import { withStyles, WithStyles } from '@material-ui/core/styles';
 import { GroupResource } from "~/models/group";
-
-const SAMPLE_CREATE_FORM_NAME = "sampleCreateFormName";
 
 export interface SampleCreateFormDialogData {
     patientUuid: string;
@@ -37,7 +35,7 @@ export interface SampleCreateFormDialogData {
     flowCompletedAt: string;
 }
 
-type DialogSampleProps = WithDialogProps<{}> & InjectedFormProps<SampleCreateFormDialogData>;
+type DialogSampleProps = WithDialogProps<{ updating: boolean }> & InjectedFormProps<SampleCreateFormDialogData>;
 
 type CssRules = 'selectWidth';
 
@@ -139,9 +137,9 @@ const SampleAddFields = () => <span>
 
 const DialogSampleCreate = (props: DialogSampleProps) =>
     <FormDialog
-        dialogTitle='Add sample'
+        dialogTitle={props.data.updating ? 'Edit sample info' : 'Add sample'}
         formFields={SampleAddFields}
-        submitLabel='Add a sample'
+        submitLabel={props.data.updating ? 'Update sample info' : 'Add sample'}
         {...props}
     />;
 
@@ -195,11 +193,6 @@ export const CreateSampleDialog = compose(
     })
 )(DialogSampleCreate);
 
-const openSampleCreateDialog = (patientUuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(initialize(SAMPLE_CREATE_FORM_NAME, { patientUuid }));
-        dispatch(dialogActions.OPEN_DIALOG({ id: SAMPLE_CREATE_FORM_NAME, data: {} }));
-    };
 
 
 export interface MenuItemProps {

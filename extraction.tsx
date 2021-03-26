@@ -129,9 +129,9 @@ const ExtractionAddFields = () => <span>
 
 const DialogExtractionCreate = (props: DialogExtractionProps) =>
     <FormDialog
-        dialogTitle={props.data.updating ? 'Edit sample' : 'Add sample'}
+        dialogTitle={props.data.updating ? 'Edit sample info' : 'Add sample'}
         formFields={ExtractionAddFields}
-        submitLabel={props.data.updating ? 'Update sample' : 'Add sample'}
+        submitLabel={props.data.updating ? 'Update sample info' : 'Add sample'}
         {...props}
     />;
 

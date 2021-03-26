@@ -11,10 +11,11 @@ import { DataColumns } from '~/components/data-table/data-table';
 import { createTree } from '~/models/tree';
 import { SortDirection } from '~/components/data-table/data-column';
 import { bindDataExplorerActions } from "~/store/data-explorer/data-explorer-action";
-import { Typography } from '@material-ui/core';
+import { Typography, Button } from '@material-ui/core';
 import { initialize } from 'redux-form';
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { Resource } from '~/models/resource';
+import { openRunProcess } from '~/store/workflow-panel/workflow-panel-actions';
 
 import {
     DataExplorerMiddlewareService,
@@ -31,6 +32,7 @@ import { updateResources } from "~/store/resources/resources-actions";
 import { getProperty } from '~/store/properties/properties';
 import { getResource } from "~/store/resources/resources";
 import { propertiesActions } from "~/store/properties/properties-actions";
+import { loadResource } from "~/store/resources/resources-actions";
 
 export const SAMPLE_LIST_PANEL_ID = "sampleListPanel";
 export const sampleListPanelActions = bindDataExplorerActions(SAMPLE_LIST_PANEL_ID);
@@ -43,6 +45,7 @@ export const sampleRoutePath = sampleBaseRoutePath + "/:uuid";
 
 export const EXTRACTION_CREATE_FORM_NAME = "extractionCreateFormName";
 const PATIENT_PANEL_SAMPLES = "PATIENT_PANEL_SAMPLES";
+export const SAMPLE_CREATE_FORM_NAME = "sampleCreateFormName";
 
 export enum AnalysisState {
     NEW = "NEW",
@@ -63,6 +66,7 @@ enum SamplePanelColumnNames {
     EXTRACTION_TYPE = "Extraction",
     TRACKER_STATE = "State",
     BATCH_ID = "Batch",
+    WORKFLOW_STATE = "WorkflowState",
 }
 
 export const TimestampComponent = connect(
@@ -107,6 +111,30 @@ export const ExtractionComponent = connect((state: RootState, props: { resource:
             onClick={() => props.dispatch<any>(openExtractionCreateDialog(props.resource.properties["sample_tracker:sample_uuid"], props.resource))}
         >{props.resource.name}</Typography>);
 
+export const openSampleCreateDialog = (patientUuid: string, editExisting?: PropertiedResource) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        if (editExisting) {
+            dispatch(initialize(SAMPLE_CREATE_FORM_NAME, {
+                patientUuid,
+                collectionType: editExisting.properties["sample_tracker:collection_type"],
+                sampleType: editExisting.properties["sample_tracker:sample_type"],
+                collectedAt: editExisting.properties["sample_tracker:collected_at"],
+                timePoint: editExisting.properties["sample_tracker:time_point"],
+                flowStartedAt: editExisting.properties["sample_tracker:flow_started_at"],
+                flowCompletedAt: editExisting.properties["sample_tracker:flow_completed_at"]
+            }));
+        } else {
+            dispatch(initialize(SAMPLE_CREATE_FORM_NAME, { patientUuid }));
+        }
+        dispatch(dialogActions.OPEN_DIALOG({ id: SAMPLE_CREATE_FORM_NAME, data: { updating: editExisting !== undefined } }));
+    };
+
+export const SampleComponent = connect((state: RootState, props: { resource: PropertiedResource }) => props)(
+    (props: { resource: PropertiedResource } & DispatchProp<any>) =>
+        <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }}
+            onClick={() => props.dispatch<any>(openSampleCreateDialog(props.resource.properties["sample_tracker:sample_uuid"], props.resource))}
+        >{props.resource.name}</Typography>);
+
 
 export const PropertyComponent = (props: { resource: PropertiedResource, propertyname: string }) =>
     <span>{props.resource.properties[props.propertyname]}</span>;
@@ -117,7 +145,6 @@ export const ResourceComponent = connect(
         return { resource, render: props.render };
     })((props: { resource: PropertiedResource, render: (item: PropertiedResource) => React.ReactElement<any> } & DispatchProp<any>) => (props.resource ? props.render(props.resource) : <br />));
 
-// {props.resource.properties["sample_tracker:sample_type"]}</span>);
 
 export const MultiResourceComponent = connect(
     (state: RootState, props: { uuid: string, render: (item: PropertiedResource) => React.ReactElement<any> }) => {
@@ -135,6 +162,9 @@ export const MultiResourceComponent = connect(
     </>
     );
 
+export const RunProcessComponent = connect((state: RootState, props: { resource: PropertiedResource }) => props)(
+    (props: { resource: PropertiedResource } & DispatchProp<any>) =>
+        <Button onClick={() => props.dispatch<any>(openRunProcess(""))}>Start</Button>);
 
 export const sampleListPanelColumns: DataColumns<string> = [
     {
@@ -170,7 +200,7 @@ export const sampleListPanelColumns: DataColumns<string> = [
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceComponent uuid={uuid}
-            render={rsc => <span>{rsc.name}</span>} />
+            render={rsc => <SampleComponent resource={rsc} />} />
     },
     {
         name: SamplePanelColumnNames.FLOW_STARTED_AT,
@@ -215,7 +245,16 @@ export const sampleListPanelColumns: DataColumns<string> = [
         filters: createTree(),
         render: uuid => <MultiResourceComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)}
             render={rsc => <PropertyComponent resource={rsc} propertyname="sample_tracker:state" />} />
-    }
+    },
+    {
+        name: SamplePanelColumnNames.WORKFLOW_STATE,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: createTree(),
+        render: uuid => <MultiResourceComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)}
+            render={rsc => <RunProcessComponent resource={rsc} />} />
+    },
 ];
 
 const setItems = (listResults: ListResults<LinkResource>) =>
@@ -279,6 +318,8 @@ export class SampleListPanelMiddlewareService extends DataExplorerMiddlewareServ
         if (!patientUuid) {
             return;
         }
+
+        loadResource(patientUuid);
 
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));

@@ -136,7 +136,7 @@ export const PatientMainPanel = connect(patientMapStateToProps)(
             <DataExplorer
                 id={SAMPLE_LIST_PANEL_ID}
                 hideSearchInput={true}
-                hideColumnSelector={true}
+                hideColumnSelector={false}
                 onRowClick={(uuid: string) => { }}
                 onRowDoubleClick={(uuid: string) => { }}
                 onContextMenu={handleContextMenu(dispatch)}
