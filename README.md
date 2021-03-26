@@ -1,4 +1,7 @@
-# Sample tracking plugin for Arvados Workbench 2
+# Clinical sample tracking plugin for Arvados Workbench 2
+
+This is an example Arvados Workbench 2 plugin that adds a user
+interface implementing a clinical sample tracking workflow.
 
 ## Installing
 
