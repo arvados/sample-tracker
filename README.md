@@ -5,9 +5,9 @@ interface implementing a clinical sample tracking workflow.
 
 ## Installing
 
-1. Get the source for Workbench 2
+1. Get the source for Workbench 2: https://git.arvados.org/arvados-workbench2.git/
 
-https://git.arvados.org/arvados-workbench2.git/
+github mirror: https://github.com/arvados/arvados-workbench2
 
 2. Check out `sample-tracker` source and put it in `arvados-workbench2/src/plugins/sample-tracker`
 
