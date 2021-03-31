@@ -28,14 +28,18 @@ import { getResource } from "~/store/resources/resources";
 import { Typography } from '@material-ui/core';
 import { initialize } from 'redux-form';
 import { dialogActions } from "~/store/dialog/dialog-actions";
-import { AnalysisState } from './sampleList';
+import { AnalysisState } from './biopsyList';
 import { StudyPathId } from './patient';
 import { matchPath } from "react-router";
 import { studyRoutePath } from './studyList';
+import {
+    sampleTrackerBatch, sampleTrackerSample, sampleTrackerState,
+    sampleTrackerSampleUuid, sampleTrackerBatchUuid
+} from './metadataTerms';
+
 
 export const BATCH_LIST_PANEL_ID = "batchPanel";
 export const batchListPanelActions = bindDataExplorerActions(BATCH_LIST_PANEL_ID);
-export const sampleTrackerBatchType = "sample_tracker:batch";
 export const batchListRoutePath = "/sampleTracker/Batches";
 export const batchRoutePath = batchListRoutePath + "/:uuid";
 export const BATCH_CREATE_FORM_NAME = "batchCreateFormName";
@@ -50,7 +54,7 @@ export interface BatchCreateFormDialogData {
     name: string;
     state: AnalysisState;
     selections: {
-        extraction: GroupResource,
+        sample: GroupResource,
         value: boolean,
         startingValue: boolean,
     }[];
@@ -68,20 +72,18 @@ export const BatchNameComponent = connect(
 export const openBatchCreateDialog = (editExisting?: GroupResource) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const filters = new FilterBuilder()
-            .addEqual("properties.type", "sample_tracker:extraction")
-            .addEqual("properties.sample_tracker:state", "NEW")
-            .addEqual("properties.sample_tracker:batch_uuid", "");
+            .addEqual("properties.type", sampleTrackerSample)
+            .addEqual("properties." + sampleTrackerState, "NEW")
+            .addEqual(sampleTrackerBatchUuid, "");
         const results = await services.groupsService.list({
             filters: filters.getFilters()
         });
         const samples = await services.linkService.list({
-            filters: new FilterBuilder()
-                .addIn("uuid", results.items.map((item) => item.properties["sample_tracker:sample_uuid"]))
-                .getFilters()
+            filters: new FilterBuilder().addIn("uuid", results.items.map((item) => item.properties[sampleTrackerSampleUuid])).getFilters()
         });
         console.log(samples);
         const selections = results.items.map((item) => ({
-            extraction: item,
+            sample: item,
             value: false,
             startingValue: false
         }));
@@ -92,16 +94,16 @@ export const openBatchCreateDialog = (editExisting?: GroupResource) =>
         if (editExisting) {
             formup.selfUuid = editExisting.uuid;
             formup.name = editExisting.name;
-            formup.state = editExisting.properties["sample_tracker:state"];
+            formup.state = editExisting.properties[sampleTrackerState];
             const results2 = await services.groupsService.list({
                 filters: new FilterBuilder()
-                    .addEqual("properties.type", "sample_tracker:extraction")
-                    .addEqual("properties.sample_tracker:batch_uuid", editExisting.uuid)
+                    .addEqual("properties.type", sampleTrackerSample)
+                    .addEqual("properties." + sampleTrackerBatchUuid, editExisting.uuid)
                     .getFilters()
             });
             for (const item of results2.items) {
                 selections.push({
-                    extraction: item,
+                    sample: item,
                     value: true,
                     startingValue: true
                 });
@@ -142,7 +144,7 @@ const setItems = (listResults: ListResults<GroupResource>) =>
 
 const getFilters = (dataExplorer: DataExplorerState) => {
     const fb = new FilterBuilder();
-    fb.addEqual("properties.type", sampleTrackerBatchType);
+    fb.addEqual("properties.type", sampleTrackerBatch);
 
     const nameFilters = new FilterBuilder()
         .addILike("name", dataExplorer.searchValue)

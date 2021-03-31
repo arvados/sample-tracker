@@ -37,17 +37,17 @@ import {
     patientRoutePath, patientBaseRoutePath
 } from './patientList';
 import {
-    openPatientPanel, PatientMainPanel, PATIENT_SAMPLE_MENU, patientSampleActionSet,
+    openPatientPanel, PatientMainPanel, PATIENT_BIOPSY_MENU, patientBiopsyActionSet,
     CreatePatientDialog, AddPatientMenuComponent, StudyPathId,
 } from './patient';
 
 import {
-    SampleListPanelMiddlewareService,
-    SAMPLE_LIST_PANEL_ID,
-} from './sampleList';
+    BiopsyListPanelMiddlewareService,
+    BIOPSY_LIST_PANEL_ID,
+} from './biopsyList';
 import {
-    AddSampleMenuComponent, CreateSampleDialog
-} from './sample';
+    AddBiopsyMenuComponent, CreateBiopsyDialog
+} from './biopsy';
 
 import {
     AddBatchMenuComponent, CreateBatchDialog
@@ -57,7 +57,7 @@ import {
 } from './batchList';
 
 
-import { CreateExtractionDialog } from './extraction';
+import { CreateSampleDialog } from './sample';
 
 const categoryName = "Studies";
 
@@ -73,7 +73,7 @@ export const register = (pluginConfig: PluginConfig) => {
     pluginConfig.newButtonMenuList.push((elms, menuItemClass) => {
         elms.push(<AddStudyMenuComponent className={menuItemClass} />);
         elms.push(<AddPatientMenuComponent className={menuItemClass} />);
-        elms.push(<AddSampleMenuComponent className={menuItemClass} />);
+        elms.push(<AddBiopsyMenuComponent className={menuItemClass} />);
         elms.push(<AddBatchMenuComponent className={menuItemClass} />);
         return elms;
     });
@@ -148,8 +148,8 @@ export const register = (pluginConfig: PluginConfig) => {
 
     pluginConfig.dialogs.push(<CreateStudyDialog />);
     pluginConfig.dialogs.push(<CreatePatientDialog />);
+    pluginConfig.dialogs.push(<CreateBiopsyDialog />);
     pluginConfig.dialogs.push(<CreateSampleDialog />);
-    pluginConfig.dialogs.push(<CreateExtractionDialog />);
     pluginConfig.dialogs.push(<CreateBatchDialog />);
 
     pluginConfig.middlewares.push((elms, services) => {
@@ -160,7 +160,7 @@ export const register = (pluginConfig: PluginConfig) => {
             new PatientListPanelMiddlewareService(services, PATIENT_LIST_PANEL_ID)
         ));
         elms.push(dataExplorerMiddleware(
-            new SampleListPanelMiddlewareService(services, SAMPLE_LIST_PANEL_ID)
+            new BiopsyListPanelMiddlewareService(services, BIOPSY_LIST_PANEL_ID)
         ));
         elms.push(dataExplorerMiddleware(
             new BatchListPanelMiddlewareService(services, BATCH_LIST_PANEL_ID)
@@ -169,5 +169,5 @@ export const register = (pluginConfig: PluginConfig) => {
         return elms;
     });
 
-    addMenuActionSet(PATIENT_SAMPLE_MENU, patientSampleActionSet);
+    addMenuActionSet(PATIENT_BIOPSY_MENU, patientBiopsyActionSet);
 };

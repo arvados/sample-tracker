@@ -21,8 +21,7 @@ import { createProject } from "~/store/workbench/workbench-actions";
 import { reduxForm, initialize } from 'redux-form';
 import { withDialog } from "~/store/dialog/with-dialog";
 import { ServiceRepository } from "~/services/services";
-
-import { sampleTrackerStudyType } from './studyList';
+import { sampleTrackerStudy } from "./metadataTerms";
 
 import {
     PATIENT_LIST_PANEL_ID, STUDY_PANEL_CURRENT_UUID,
@@ -62,7 +61,7 @@ export const CreateStudyDialog = compose(
     reduxForm<ProjectCreateFormDialogData>({
         form: STUDY_CREATE_FORM_NAME,
         onSubmit: (data, dispatch) => {
-            data.properties = { type: sampleTrackerStudyType };
+            data.properties = { type: sampleTrackerStudy };
             dispatch(createProject(data));
         }
     })

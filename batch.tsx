@@ -25,12 +25,15 @@ import { FormControl, InputLabel } from '@material-ui/core';
 import { GroupClass } from "~/models/group";
 
 import {
-    sampleTrackerBatchType, batchListPanelActions,
+    batchListPanelActions,
     BATCH_LIST_PANEL_ID, BATCH_CREATE_FORM_NAME,
     openBatchCreateDialog, BatchCreateFormDialogData
 } from './batchList';
-import { SampleStateSelect } from './extraction';
+import {
+    sampleTrackerBatch, sampleTrackerBatchUuid, sampleTrackerState
+} from './metadataTerms';
 
+import { SampleStateSelect } from './sample';
 
 export const BATCH_PANEL_CURRENT_UUID = "BatchPanelCurrentUUID";
 
@@ -54,9 +57,9 @@ const BatchAddFields = (props: DialogProjectProps) => <span>
     /></div>
     <List>
         {props.data.selections.map((val, idx) =>
-            <ListItem key={val.extraction.uuid}>
+            <ListItem key={val.sample.uuid}>
                 <Field name={"selections[" + idx + "].value"} component={FormCheckbox} type="checkbox" />
-                <span>{val.extraction.name}</span>
+                <span>{val.sample.name}</span>
             </ListItem>)}
     </List>
 </span>;
@@ -77,8 +80,8 @@ const createBatch = (data: BatchCreateFormDialogData) =>
             ownerUuid: data.ownerUuid,
             groupClass: GroupClass.PROJECT,
             properties: {
-                "type": sampleTrackerBatchType,
-                "sample_tracker:state": data.state,
+                "type": sampleTrackerBatch,
+                [sampleTrackerState]: data.state,
             }
         };
         let newBatch;
@@ -90,12 +93,12 @@ const createBatch = (data: BatchCreateFormDialogData) =>
 
         for (const s of data.selections) {
             if (s.value && !s.startingValue) {
-                s.extraction.properties["sample_tracker:batch_uuid"] = newBatch.uuid;
-                s.extraction.properties["sample_tracker:state"] = data.state;
-                await services.groupsService.update(s.extraction.uuid, { properties: s.extraction.properties });
+                s.sample.properties[sampleTrackerBatchUuid] = newBatch.uuid;
+                s.sample.properties[sampleTrackerState] = data.state;
+                await services.groupsService.update(s.sample.uuid, { properties: s.sample.properties });
             } else if (!s.value && s.startingValue) {
-                delete s.extraction.properties["sample_tracker:batch_uuid"];
-                await services.groupsService.update(s.extraction.uuid, { properties: s.extraction.properties });
+                delete s.sample.properties[sampleTrackerBatchUuid];
+                await services.groupsService.update(s.sample.uuid, { properties: s.sample.properties });
             }
         }
 

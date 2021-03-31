@@ -34,18 +34,25 @@ import { getResource } from "~/store/resources/resources";
 import { propertiesActions } from "~/store/properties/properties-actions";
 import { loadResource } from "~/store/resources/resources-actions";
 
-export const SAMPLE_LIST_PANEL_ID = "sampleListPanel";
-export const sampleListPanelActions = bindDataExplorerActions(SAMPLE_LIST_PANEL_ID);
-export const sampleTrackerSampleType = "sample_tracker:sample";
-export const sampleTrackerExtractionType = "sample_tracker:extraction";
-export const PATIENT_PANEL_CURRENT_UUID = "PatientPanelCurrentUUID";
-export const SAMPLE_PANEL_CURRENT_UUID = "SamplePanelCurrentUUID";
-export const sampleBaseRoutePath = "/SampleTracker/Sample";
-export const sampleRoutePath = sampleBaseRoutePath + "/:uuid";
+import {
+    sampleTrackerBiopsy, sampleTrackerSample, sampleTrackerAliquot,
+    sampleTrackerState, sampleTrackerCollectionType, sampleTrackerBiopsyType,
+    sampleTrackerCollectedAt, sampleTrackerTimePoint, sampleTrackerFlowStartedAt,
+    sampleTrackerFlowCompletedAt, sampleTrackerSentForSequencingAt,
+    sampleTrackerSequencingCompletedAt, sampleTrackerBatchUuid, sampleTrackerSampleType
+} from './metadataTerms';
 
-export const EXTRACTION_CREATE_FORM_NAME = "extractionCreateFormName";
-const PATIENT_PANEL_SAMPLES = "PATIENT_PANEL_SAMPLES";
+export const BIOPSY_LIST_PANEL_ID = "biopsyListPanel";
+export const biopsyListPanelActions = bindDataExplorerActions(BIOPSY_LIST_PANEL_ID);
+
+export const PATIENT_PANEL_CURRENT_UUID = "PatientPanelCurrentUUID";
+export const BIOPSY_PANEL_CURRENT_UUID = "BiopsyPanelCurrentUUID";
+export const biopsyBaseRoutePath = "/BiopsyTracker/Biopsy";
+export const biopsyRoutePath = biopsyBaseRoutePath + "/:uuid";
+
 export const SAMPLE_CREATE_FORM_NAME = "sampleCreateFormName";
+const PATIENT_PANEL_BIOPSIES = "PATIENT_PANEL_BIOPSIES";
+export const BIOPSY_CREATE_FORM_NAME = "biopsyCreateFormName";
 
 export enum AnalysisState {
     NEW = "NEW",
@@ -55,15 +62,15 @@ export enum AnalysisState {
     ANALYSIS_COMPLETE = "ANALYSIS_COMPLETE"
 }
 
-enum SamplePanelColumnNames {
+enum BiopsyPanelColumnNames {
     NAME = "Name",
     TIME_POINT = "Time point",
     COLLECTION_TYPE = "Collection type",
-    SAMPLE_TYPE = "Sample type",
+    BIOPSY_TYPE = "Biopsy type",
     FLOW_STARTED_AT = "Flow started",
     FLOW_COMPLETED_AT = "Flow completed",
     COLLECTED_AT = "Collected",
-    EXTRACTION_TYPE = "Extraction",
+    SAMPLE_TYPE = "Sample",
     TRACKER_STATE = "State",
     BATCH_ID = "Batch",
     WORKFLOW_STATE = "WorkflowState",
@@ -80,59 +87,62 @@ interface PropertiedResource extends Resource {
     properties: any;
 }
 
-export const openExtractionCreateDialog = (sampleUuid: string, editExisting?: PropertiedResource) =>
+export const openSampleCreateDialog = (biopsyUuid: string, editExisting?: PropertiedResource) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (editExisting) {
-            dispatch(initialize(EXTRACTION_CREATE_FORM_NAME,
+            dispatch(initialize(SAMPLE_CREATE_FORM_NAME,
                 {
-                    sampleUuid,
-                    additionalId: editExisting.properties["sample_tracker:additional_id"],
-                    state: editExisting.properties["sample_tracker:state"],
-                    extractionType: editExisting.properties["sample_tracker:extraction_type"],
-                    batchUuid: editExisting.properties["sample_tracker:batch_uuid"],
+                    biopsyUuid,
+                    sampleType: editExisting.properties[sampleTrackerSampleType],
+                    timePoint: editExisting.properties[sampleTrackerTimePoint],
+                    aliquot: editExisting.properties[sampleTrackerAliquot],
+                    sentForSequencing: editExisting.properties[sampleTrackerSentForSequencingAt],
+                    sequencingCompleted: editExisting.properties[sampleTrackerSequencingCompletedAt],
+                    state: editExisting.properties[sampleTrackerState],
+                    batchUuid: editExisting.properties[sampleTrackerBatchUuid],
                     uuidSelf: editExisting.uuid,
                 }));
         } else {
-            dispatch(initialize(EXTRACTION_CREATE_FORM_NAME,
+            dispatch(initialize(SAMPLE_CREATE_FORM_NAME,
                 {
-                    sampleUuid,
+                    biopsyUuid,
                     additionalId: 1,
                     state: AnalysisState.NEW
                 }));
         }
         dispatch(dialogActions.OPEN_DIALOG({
-            id: EXTRACTION_CREATE_FORM_NAME, data: { updating: editExisting !== undefined, }
+            id: SAMPLE_CREATE_FORM_NAME, data: { updating: editExisting !== undefined, }
         }));
-    };
-
-export const ExtractionComponent = connect((state: RootState, props: { resource: PropertiedResource }) => props)(
-    (props: { resource: PropertiedResource } & DispatchProp<any>) =>
-        <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }}
-            onClick={() => props.dispatch<any>(openExtractionCreateDialog(props.resource.properties["sample_tracker:sample_uuid"], props.resource))}
-        >{props.resource.name}</Typography>);
-
-export const openSampleCreateDialog = (patientUuid: string, editExisting?: PropertiedResource) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        if (editExisting) {
-            dispatch(initialize(SAMPLE_CREATE_FORM_NAME, {
-                patientUuid,
-                collectionType: editExisting.properties["sample_tracker:collection_type"],
-                sampleType: editExisting.properties["sample_tracker:sample_type"],
-                collectedAt: editExisting.properties["sample_tracker:collected_at"],
-                timePoint: editExisting.properties["sample_tracker:time_point"],
-                flowStartedAt: editExisting.properties["sample_tracker:flow_started_at"],
-                flowCompletedAt: editExisting.properties["sample_tracker:flow_completed_at"]
-            }));
-        } else {
-            dispatch(initialize(SAMPLE_CREATE_FORM_NAME, { patientUuid }));
-        }
-        dispatch(dialogActions.OPEN_DIALOG({ id: SAMPLE_CREATE_FORM_NAME, data: { updating: editExisting !== undefined } }));
     };
 
 export const SampleComponent = connect((state: RootState, props: { resource: PropertiedResource }) => props)(
     (props: { resource: PropertiedResource } & DispatchProp<any>) =>
         <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }}
-            onClick={() => props.dispatch<any>(openSampleCreateDialog(props.resource.properties["sample_tracker:sample_uuid"], props.resource))}
+            onClick={() => props.dispatch<any>(openSampleCreateDialog(props.resource.properties["sample_tracker:biopsy_uuid"], props.resource))}
+        >{props.resource.name}</Typography>);
+
+export const openBiopsyCreateDialog = (patientUuid: string, editExisting?: PropertiedResource) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        if (editExisting) {
+            dispatch(initialize(BIOPSY_CREATE_FORM_NAME, {
+                patientUuid,
+                collectionType: editExisting.properties[sampleTrackerCollectionType],
+                biopsyType: editExisting.properties[sampleTrackerBiopsyType],
+                collectedAt: editExisting.properties[sampleTrackerCollectedAt],
+                timePoint: editExisting.properties[sampleTrackerTimePoint],
+                flowStartedAt: editExisting.properties[sampleTrackerFlowStartedAt],
+                flowCompletedAt: editExisting.properties[sampleTrackerFlowCompletedAt]
+            }));
+        } else {
+            dispatch(initialize(BIOPSY_CREATE_FORM_NAME, { patientUuid }));
+        }
+        dispatch(dialogActions.OPEN_DIALOG({ id: BIOPSY_CREATE_FORM_NAME, data: { updating: editExisting !== undefined } }));
+    };
+
+export const BiopsyComponent = connect((state: RootState, props: { resource: PropertiedResource }) => props)(
+    (props: { resource: PropertiedResource } & DispatchProp<any>) =>
+        <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }}
+            onClick={() => props.dispatch<any>(openBiopsyCreateDialog(props.resource.properties["sample_tracker:biopsy_uuid"], props.resource))}
         >{props.resource.name}</Typography>);
 
 
@@ -148,7 +158,7 @@ export const ResourceComponent = connect(
 
 export const MultiResourceComponent = connect(
     (state: RootState, props: { uuid: string, render: (item: PropertiedResource) => React.ReactElement<any> }) => {
-        const reverse = getProperty<{ [key: string]: any[] }>(PATIENT_PANEL_SAMPLES)(state.properties);
+        const reverse = getProperty<{ [key: string]: any[] }>(PATIENT_PANEL_BIOPSIES)(state.properties);
         let items = (reverse && reverse[props.uuid]) || [];
         items = items.map(item => {
             const rsc = getResource<GroupResource>(item)(state.resources);
@@ -166,18 +176,18 @@ export const RunProcessComponent = connect((state: RootState, props: { resource:
     (props: { resource: PropertiedResource } & DispatchProp<any>) =>
         <Button onClick={() => props.dispatch<any>(openRunProcess(""))}>Start</Button>);
 
-export const sampleListPanelColumns: DataColumns<string> = [
+export const biopsyListPanelColumns: DataColumns<string> = [
     {
-        name: SamplePanelColumnNames.SAMPLE_TYPE,
+        name: BiopsyPanelColumnNames.BIOPSY_TYPE,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceComponent uuid={uuid}
-            render={rsc => <PropertyComponent resource={rsc} propertyname="sample_tracker:sample_type" />} />
+            render={rsc => <PropertyComponent resource={rsc} propertyname="sample_tracker:biopsy_type" />} />
     },
     {
-        name: SamplePanelColumnNames.TIME_POINT,
+        name: BiopsyPanelColumnNames.TIME_POINT,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
@@ -186,7 +196,7 @@ export const sampleListPanelColumns: DataColumns<string> = [
             render={rsc => <PropertyComponent resource={rsc} propertyname="sample_tracker:time_point" />} />
     },
     {
-        name: SamplePanelColumnNames.COLLECTED_AT,
+        name: BiopsyPanelColumnNames.COLLECTED_AT,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
@@ -194,16 +204,16 @@ export const sampleListPanelColumns: DataColumns<string> = [
         render: uuid => <TimestampComponent uuid={uuid} propertyname="sample_tracker:collected_at" />
     },
     {
-        name: SamplePanelColumnNames.NAME,
+        name: BiopsyPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceComponent uuid={uuid}
-            render={rsc => <SampleComponent resource={rsc} />} />
+            render={rsc => <BiopsyComponent resource={rsc} />} />
     },
     {
-        name: SamplePanelColumnNames.FLOW_STARTED_AT,
+        name: BiopsyPanelColumnNames.FLOW_STARTED_AT,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
@@ -211,7 +221,7 @@ export const sampleListPanelColumns: DataColumns<string> = [
         render: uuid => <TimestampComponent uuid={uuid} propertyname="sample_tracker:flow_started_at" />
     },
     {
-        name: SamplePanelColumnNames.FLOW_COMPLETED_AT,
+        name: BiopsyPanelColumnNames.FLOW_COMPLETED_AT,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
@@ -219,54 +229,75 @@ export const sampleListPanelColumns: DataColumns<string> = [
         render: uuid => <TimestampComponent uuid={uuid} propertyname="sample_tracker:flow_completed_at" />
     },
     {
-        name: SamplePanelColumnNames.EXTRACTION_TYPE,
+        name: BiopsyPanelColumnNames.SAMPLE_TYPE,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <MultiResourceComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)}
-            render={rsc => <ExtractionComponent resource={rsc} />} />
+        render: uuid => <MultiResourceComponent uuid={uuid.substr(biopsyBaseRoutePath.length + 1)}
+            render={rsc => <SampleComponent resource={rsc} />} />
     },
     {
-        name: SamplePanelColumnNames.BATCH_ID,
+        name: BiopsyPanelColumnNames.BATCH_ID,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <MultiResourceComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)}
+        render: uuid => <MultiResourceComponent uuid={uuid.substr(biopsyBaseRoutePath.length + 1)}
             render={rsc => <ResourceComponent uuid={rsc.properties["sample_tracker:batch_uuid"]}
                 render={rsc2 => <span>{rsc2.name}</span>} />} />
     },
     {
-        name: SamplePanelColumnNames.TRACKER_STATE,
+        name: BiopsyPanelColumnNames.TRACKER_STATE,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <MultiResourceComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)}
+        render: uuid => <MultiResourceComponent uuid={uuid.substr(biopsyBaseRoutePath.length + 1)}
             render={rsc => <PropertyComponent resource={rsc} propertyname="sample_tracker:state" />} />
     },
     {
-        name: SamplePanelColumnNames.WORKFLOW_STATE,
+        name: BiopsyPanelColumnNames.WORKFLOW_STATE,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <MultiResourceComponent uuid={uuid.substr(sampleBaseRoutePath.length + 1)}
+        render: uuid => <MultiResourceComponent uuid={uuid.substr(biopsyBaseRoutePath.length + 1)}
             render={rsc => <RunProcessComponent resource={rsc} />} />
     },
 ];
 
 const setItems = (listResults: ListResults<LinkResource>) =>
-    sampleListPanelActions.SET_ITEMS({
+    biopsyListPanelActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
         items: listResults.items.map(resource => resource.uuid),
     });
 
+const getBiopsyFilters = (dataExplorer: DataExplorerState, patientUuid: string) => {
+    const fb = new FilterBuilder();
+    fb.addEqual("owner_uuid", patientUuid);
+    fb.addEqual("link_class", sampleTrackerBiopsy);
+
+    const nameFilters = new FilterBuilder()
+        .addILike("name", dataExplorer.searchValue)
+        .getFilters();
+
+    return joinFilters(
+        fb.getFilters(),
+        nameFilters,
+    );
+};
+
+const getBiopsyParams = (dataExplorer: DataExplorerState, patientUuid: string) => ({
+    ...dataExplorerToListParams(dataExplorer),
+    filters: getBiopsyFilters(dataExplorer, patientUuid),
+});
+
+
 const getSampleFilters = (dataExplorer: DataExplorerState, patientUuid: string) => {
     const fb = new FilterBuilder();
     fb.addEqual("owner_uuid", patientUuid);
-    fb.addEqual("link_class", sampleTrackerSampleType);
+    fb.addEqual("properties.type", sampleTrackerSample);
 
     const nameFilters = new FilterBuilder()
         .addILike("name", dataExplorer.searchValue)
@@ -283,28 +314,7 @@ const getSampleParams = (dataExplorer: DataExplorerState, patientUuid: string) =
     filters: getSampleFilters(dataExplorer, patientUuid),
 });
 
-
-const getExtractionFilters = (dataExplorer: DataExplorerState, patientUuid: string) => {
-    const fb = new FilterBuilder();
-    fb.addEqual("owner_uuid", patientUuid);
-    fb.addEqual("properties.type", sampleTrackerExtractionType);
-
-    const nameFilters = new FilterBuilder()
-        .addILike("name", dataExplorer.searchValue)
-        .getFilters();
-
-    return joinFilters(
-        fb.getFilters(),
-        nameFilters,
-    );
-};
-
-const getExtractionParams = (dataExplorer: DataExplorerState, patientUuid: string) => ({
-    ...dataExplorerToListParams(dataExplorer),
-    filters: getExtractionFilters(dataExplorer, patientUuid),
-});
-
-export class SampleListPanelMiddlewareService extends DataExplorerMiddlewareService {
+export class BiopsyListPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
@@ -323,14 +333,14 @@ export class SampleListPanelMiddlewareService extends DataExplorerMiddlewareServ
 
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-            const response = await this.services.linkService.list(getSampleParams(dataExplorer, patientUuid));
-            const response2 = await this.services.groupsService.list(getExtractionParams(dataExplorer, patientUuid));
+            const response = await this.services.linkService.list(getBiopsyParams(dataExplorer, patientUuid));
+            const response2 = await this.services.groupsService.list(getSampleParams(dataExplorer, patientUuid));
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
 
             const reverse = {};
             const batches = [];
             for (const i of response2.items) {
-                const sid = i.properties["sample_tracker:sample_uuid"];
+                const sid = i.properties["sample_tracker:biopsy_uuid"];
                 const lst = reverse[sid] || [];
                 lst.push(i.uuid);
                 reverse[sid] = lst;
@@ -339,7 +349,7 @@ export class SampleListPanelMiddlewareService extends DataExplorerMiddlewareServ
                     batches.push(batch);
                 }
             }
-            api.dispatch(propertiesActions.SET_PROPERTY({ key: PATIENT_PANEL_SAMPLES, value: reverse }));
+            api.dispatch(propertiesActions.SET_PROPERTY({ key: PATIENT_PANEL_BIOPSIES, value: reverse }));
 
             const response3 = await this.services.groupsService.list({
                 filters: new FilterBuilder()
@@ -350,7 +360,7 @@ export class SampleListPanelMiddlewareService extends DataExplorerMiddlewareServ
             api.dispatch(updateResources(response.items));
 
             for (const i of response.items) {
-                i.uuid = sampleBaseRoutePath + "/" + i.uuid;
+                i.uuid = biopsyBaseRoutePath + "/" + i.uuid;
             }
             api.dispatch(updateResources(response.items));
             api.dispatch(updateResources(response2.items));
@@ -358,7 +368,7 @@ export class SampleListPanelMiddlewareService extends DataExplorerMiddlewareServ
             api.dispatch(setItems(response));
         } catch (e) {
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
-            api.dispatch(sampleListPanelActions.SET_ITEMS({
+            api.dispatch(biopsyListPanelActions.SET_ITEMS({
                 items: [],
                 itemsAvailable: 0,
                 page: 0,

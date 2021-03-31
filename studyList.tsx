@@ -24,10 +24,10 @@ import { DataExplorer as DataExplorerState, getDataExplorer } from '~/store/data
 import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
 import { updateResources } from "~/store/resources/resources-actions";
 import { ResourceName } from '~/views-components/data-explorer/renderers';
+import { sampleTrackerStudy } from "./metadataTerms";
 
 export const STUDY_LIST_PANEL_ID = "studyPanel";
 export const studyListPanelActions = bindDataExplorerActions(STUDY_LIST_PANEL_ID);
-export const sampleTrackerStudyType = "sample_tracker:study";
 export const studyListRoutePath = "/sampleTracker/Studies";
 export const studyRoutePath = studyListRoutePath + "/:uuid";
 
@@ -79,7 +79,7 @@ const getFilters = (dataExplorer: DataExplorerState) => {
     //        filterName => statusColumnFilters[filterName].selected
     //    );
     const fb = new FilterBuilder();
-    fb.addEqual("properties.type", sampleTrackerStudyType);
+    fb.addEqual("properties.type", sampleTrackerStudy);
 
     const nameFilters = new FilterBuilder()
         .addILike("name", dataExplorer.searchValue)

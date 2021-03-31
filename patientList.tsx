@@ -26,10 +26,10 @@ import { DataExplorer as DataExplorerState, getDataExplorer } from '~/store/data
 import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
 import { getProperty } from '~/store/properties/properties';
 import { updateResources } from "~/store/resources/resources-actions";
+import { sampleTrackerPatient } from "./metadataTerms";
 
 export const PATIENT_LIST_PANEL_ID = "patientListPanel";
 export const patientListPanelActions = bindDataExplorerActions(PATIENT_LIST_PANEL_ID);
-export const sampleTrackerPatientType = "sample_tracker:patient";
 export const STUDY_PANEL_CURRENT_UUID = "StudyPanelCurrentUUID";
 export const PATIENT_PANEL_CURRENT_UUID = "PatientPanelCurrentUUID";
 export const patientBaseRoutePath = "/SampleTracker/Patient";
@@ -70,7 +70,7 @@ const setItems = (listResults: ListResults<GroupResource>) =>
 const getFilters = (dataExplorer: DataExplorerState, studyUuid: string) => {
     const fb = new FilterBuilder();
     fb.addEqual("owner_uuid", studyUuid);
-    fb.addEqual("properties.type", sampleTrackerPatientType);
+    fb.addEqual("properties.type", sampleTrackerPatient);
 
     const nameFilters = new FilterBuilder()
         .addILike("name", dataExplorer.searchValue)

@@ -24,16 +24,20 @@ import { MenuItem } from "@material-ui/core";
 import { createProject } from "~/store/workbench/workbench-actions";
 import { matchPath } from "react-router";
 import { ServiceRepository } from "~/services/services";
+import { FilterBuilder } from "~/services/api/filter-builder";
+import { getResource } from "~/store/resources/resources";
+import { GroupResource } from "~/models/group";
 
-import { PATIENT_PANEL_CURRENT_UUID, sampleTrackerPatientType } from './patientList';
+import { PATIENT_PANEL_CURRENT_UUID } from './patientList';
+import { sampleTrackerPatient } from './metadataTerms';
 import {
-    SAMPLE_LIST_PANEL_ID, sampleListPanelActions,
-    sampleBaseRoutePath, sampleListPanelColumns,
-    openExtractionCreateDialog
-} from './sampleList';
+    BIOPSY_LIST_PANEL_ID, biopsyListPanelActions,
+    biopsyBaseRoutePath, biopsyListPanelColumns,
+    openSampleCreateDialog
+} from './biopsyList';
 import { studyRoutePath } from './studyList';
 
-export const PATIENT_SAMPLE_MENU = "Sample Tracker - Patient Sample menu";
+export const PATIENT_BIOPSY_MENU = "Biopsy Tracker - Patient Biopsy menu";
 const PATIENT_CREATE_FORM_NAME = "patientCreateFormName";
 
 type DialogProjectProps = WithDialogProps<{}> & InjectedFormProps<ProjectCreateFormDialogData>;
@@ -47,6 +51,7 @@ const DialogPatientCreate = (props: DialogProjectProps) =>
         dialogTitle='Add patient'
         formFields={PatientAddFields}
         submitLabel='Add a patient'
+        enableWhenPristine={true}
         {...props}
     />;
 
@@ -55,7 +60,7 @@ export const CreatePatientDialog = compose(
     reduxForm<ProjectCreateFormDialogData>({
         form: PATIENT_CREATE_FORM_NAME,
         onSubmit: (data, dispatch) => {
-            data.properties = { type: sampleTrackerPatientType };
+            data.properties = { type: sampleTrackerPatient };
             dispatch(createProject(data));
         }
     })
@@ -64,6 +69,7 @@ export const CreatePatientDialog = compose(
 export interface MenuItemProps {
     className?: string;
     studyUuid?: string;
+    patientPrefix?: string;
 }
 
 export interface StudyPathId {
@@ -74,27 +80,34 @@ export const patientsMapStateToProps = (state: RootState) => {
     const props: MenuItemProps = {};
     const studyid = matchPath<StudyPathId>(state.router.location!.pathname, { path: studyRoutePath, exact: true });
     if (studyid) {
-        props.studyUuid = studyid.params.uuid;
+        const resource = getResource<GroupResource>(state.router.location!.pathname)(state.resources);
+        if (resource) {
+            props.studyUuid = studyid.params.uuid;
+            props.patientPrefix = "P_";
+        }
     }
     return props;
 };
 
-const openPatientCreateDialog = (studyUuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(initialize(PATIENT_CREATE_FORM_NAME, { ownerUuid: studyUuid }));
+const openPatientCreateDialog = (studyUuid?: string, patientPrefix?: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        if (!studyUuid || !patientPrefix) { return; }
+        const results = await services.projectService.list({ filters: new FilterBuilder().addEqual("properties.type", sampleTrackerPatient).getFilters() });
+        const name = patientPrefix + (results.itemsAvailable + 1);
+        dispatch(initialize(PATIENT_CREATE_FORM_NAME, { name, ownerUuid: studyUuid }));
         dispatch(dialogActions.OPEN_DIALOG({ id: PATIENT_CREATE_FORM_NAME, data: {} }));
     };
 
 export const AddPatientMenuComponent = connect<{}, {}, MenuItemProps>(patientsMapStateToProps)(
-    ({ studyUuid, dispatch, className }: MenuItemProps & DispatchProp<any>) =>
-        <MenuItem className={className} onClick={() => dispatch(openPatientCreateDialog(studyUuid!))} disabled={!studyUuid}>Add Patient</MenuItem >
+    ({ studyUuid, patientPrefix, dispatch, className }: MenuItemProps & DispatchProp<any>) =>
+        <MenuItem className={className} onClick={() => dispatch(openPatientCreateDialog(studyUuid, patientPrefix))} disabled={!studyUuid}>Add Patient</MenuItem >
 );
 
 export const openPatientPanel = (projectUuid: string) =>
     (dispatch: Dispatch) => {
-        dispatch(sampleListPanelActions.SET_COLUMNS({ columns: sampleListPanelColumns }));
+        dispatch(biopsyListPanelActions.SET_COLUMNS({ columns: biopsyListPanelColumns }));
         dispatch(propertiesActions.SET_PROPERTY({ key: PATIENT_PANEL_CURRENT_UUID, value: projectUuid }));
-        dispatch(sampleListPanelActions.REQUEST_ITEMS());
+        dispatch(biopsyListPanelActions.REQUEST_ITEMS());
     };
 
 interface PatientProps {
@@ -116,16 +129,16 @@ const handleContextMenu = (dispatch: Dispatch) =>
             ownerUuid: "",
             isTrashed: false,
             kind: ResourceKind.NONE,
-            menuKind: PATIENT_SAMPLE_MENU
+            menuKind: PATIENT_BIOPSY_MENU
         }));
     };
 
 
-export const patientSampleActionSet: ContextMenuActionSet = [[
+export const patientBiopsyActionSet: ContextMenuActionSet = [[
     {
-        name: "Add extraction",
+        name: "Add sample",
         execute: (dispatch, resource) => {
-            dispatch<any>(openExtractionCreateDialog(resource.uuid.substr(sampleBaseRoutePath.length + 1)));
+            dispatch<any>(openSampleCreateDialog(resource.uuid.substr(biopsyBaseRoutePath.length + 1)));
         }
     },
 ]];
@@ -134,7 +147,7 @@ export const PatientMainPanel = connect(patientMapStateToProps)(
     ({ dispatch, patientUuid }: PatientProps & DispatchProp<any>) =>
         <div>
             <DataExplorer
-                id={SAMPLE_LIST_PANEL_ID}
+                id={BIOPSY_LIST_PANEL_ID}
                 hideSearchInput={true}
                 hideColumnSelector={false}
                 onRowClick={(uuid: string) => { }}

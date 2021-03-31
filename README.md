@@ -3,6 +3,14 @@
 This is an example Arvados Workbench 2 plugin that adds a user
 interface implementing a clinical sample tracking workflow.
 
+## Features
+
+* Track studies
+* Track patients in studies
+* Track biopies and associated DNA and RNA samples from patients
+* Track samples as part of sequencer batches
+* Start analysis workflow on samples
+
 ## Installing
 
 1. Get the source for Workbench 2: https://git.arvados.org/arvados-workbench2.git/
@@ -23,3 +31,7 @@ sampleTrackerPluginRegister(pluginConfig);
 For testing/development: `yarn start`
 
 For production: `make packages`
+
+## Development
+
+See
