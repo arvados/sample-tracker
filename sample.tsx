@@ -105,7 +105,7 @@ const SampleAddFields = () => <span>
         />
     </div>
 
-    <InputLabel>Time point</InputLabel>
+    <InputLabel>Sample time point</InputLabel>
     <Field
         name='timePoint'
         component={TextField}
@@ -143,9 +143,9 @@ const SampleAddFields = () => <span>
 
 const DialogSampleCreate = (props: DialogSampleProps) =>
     <FormDialog
-        dialogTitle={props.data.updating ? 'Edit biopsy info' : 'Add biopsy'}
+        dialogTitle={props.data.updating ? 'Edit sample info' : 'Add sample'}
         formFields={SampleAddFields}
-        submitLabel={props.data.updating ? 'Update biopsy info' : 'Add biopsy'}
+        submitLabel={props.data.updating ? 'Update sample info' : 'Add sample'}
         {...props}
     />;
 

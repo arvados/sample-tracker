@@ -94,7 +94,7 @@ const mustBeDefined = (value: any) => value === undefined ? "Must be defined" : 
 
 const BiopsyAddFields = () => <span>
 
-    <InputLabel>Patient time point</InputLabel>
+    <InputLabel>Patient biopsy time point</InputLabel>
     <Field
         name='timePoint'
         component={TextField}
