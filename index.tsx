@@ -83,11 +83,11 @@ export const register = (pluginConfig: PluginConfig) => {
             dispatch(push(studyListRoutePath));
             return true;
         }
-        if (uuid.startsWith(studyListRoutePath)) {
+        if (uuid && uuid.startsWith(studyListRoutePath)) {
             dispatch(push(uuid));
             return true;
         }
-        if (uuid.startsWith(patientBaseRoutePath)) {
+        if (uuid && uuid.startsWith(patientBaseRoutePath)) {
             dispatch(push(uuid));
             return true;
         }

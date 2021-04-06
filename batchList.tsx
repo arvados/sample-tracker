@@ -31,12 +31,14 @@ import { dialogActions } from "~/store/dialog/dialog-actions";
 import { AnalysisState } from './biopsyList';
 import { StudyPathId } from './patient';
 import { matchPath } from "react-router";
+import { propertiesActions } from "~/store/properties/properties-actions";
 import { studyRoutePath } from './studyList';
 import {
     sampleTrackerBatch, sampleTrackerSample, sampleTrackerState,
     sampleTrackerSampleUuid, sampleTrackerBatchUuid
 } from './metadataTerms';
-
+import { ResourceComponent } from './resource-component';
+import { RunProcessComponent } from './run-process';
 
 export const BATCH_LIST_PANEL_ID = "batchPanel";
 export const batchListPanelActions = bindDataExplorerActions(BATCH_LIST_PANEL_ID);
@@ -44,8 +46,11 @@ export const batchListRoutePath = "/sampleTracker/Batches";
 export const batchRoutePath = batchListRoutePath + "/:uuid";
 export const BATCH_CREATE_FORM_NAME = "batchCreateFormName";
 
+export const BATCHES_TO_WORKFLOW_RUNS = "BATCHES_TO_WORKFLOW_RUNS";
+
 enum BatchPanelColumnNames {
-    NAME = "Name"
+    NAME = "Name",
+    WORKFLOW_STATE = "Workflow State",
 }
 
 export interface BatchCreateFormDialogData {
@@ -74,7 +79,7 @@ export const openBatchCreateDialog = (editExisting?: GroupResource) =>
         const filters = new FilterBuilder()
             .addEqual("properties.type", sampleTrackerSample)
             .addEqual("properties." + sampleTrackerState, "NEW")
-            .addEqual(sampleTrackerBatchUuid, "");
+            .addEqual("properties." + sampleTrackerBatchUuid, "");
         const results = await services.groupsService.list({
             filters: filters.getFilters()
         });
@@ -121,6 +126,17 @@ export const batchListPanelColumns: DataColumns<string> = [
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <BatchNameComponent uuid={uuid} />
+    },
+    {
+        name: BatchPanelColumnNames.WORKFLOW_STATE,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: createTree(),
+        render: uuid => <ResourceComponent uuid={uuid}
+            render={rsc => <RunProcessComponent resource={rsc}
+                lookupProperty={BATCHES_TO_WORKFLOW_RUNS}
+                workflowToRun="x2b8c-7fd4e-oi0uz0pt4qnpk7v" />} />
     }
 ];
 
@@ -173,8 +189,30 @@ export class BatchListPanelMiddlewareService extends DataExplorerMiddlewareServi
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const response = await this.services.groupsService.list(getParams(dataExplorer));
+
+            const responseContainerRequests = await this.services.containerRequestService.list({
+                filters: (new FilterBuilder().addIn("owner_uuid", response.items.map(s => s.uuid)).addEqual("requesting_container_uuid", null)).getFilters(),
+                order: "created_at desc"
+            });
+            const responseContainers = await this.services.containerService.list({
+                filters: (new FilterBuilder().addIn("uuid", responseContainerRequests.items.filter(s => s != null).map(s => s.containerUuid!))).getFilters()
+            });
+
+            const samplesToWf = {};
+            for (const i of response.items) {
+                for (const j of responseContainerRequests.items) {
+                    if (i.uuid === j.ownerUuid) {
+                        samplesToWf[i.uuid] = j;
+                        break;
+                    }
+                }
+            }
+            api.dispatch(propertiesActions.SET_PROPERTY({ key: BATCHES_TO_WORKFLOW_RUNS, value: samplesToWf }));
+
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             api.dispatch(updateResources(response.items));
+            api.dispatch(updateResources(responseContainerRequests.items));
+            api.dispatch(updateResources(responseContainers.items));
             api.dispatch(setItems(response));
         } catch (e) {
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
