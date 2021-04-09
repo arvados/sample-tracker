@@ -35,7 +35,7 @@ import { propertiesActions } from "~/store/properties/properties-actions";
 import { studyRoutePath } from './studyList';
 import {
     sampleTrackerBatch, sampleTrackerSample, sampleTrackerState,
-    sampleTrackerSampleUuid, sampleTrackerBatchUuid
+    sampleTrackerBatchUuid
 } from './metadataTerms';
 import { ResourceComponent } from './resource-component';
 import { RunProcessComponent } from './run-process';
@@ -76,18 +76,26 @@ export const BatchNameComponent = connect(
 
 export const openBatchCreateDialog = (editExisting?: GroupResource) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const filters = new FilterBuilder()
-            .addEqual("properties.type", sampleTrackerSample)
-            .addEqual("properties." + sampleTrackerState, "NEW")
-            .addEqual("properties." + sampleTrackerBatchUuid, "");
+
+        let sampleState = "NEW";
+        if (editExisting) {
+            sampleState = editExisting.properties[sampleTrackerState];
+        }
+
         const results = await services.groupsService.list({
-            filters: filters.getFilters()
+            filters: new FilterBuilder()
+                .addEqual("properties.type", sampleTrackerSample)
+                .addEqual("properties." + sampleTrackerState, sampleState)
+                .addEqual("properties." + sampleTrackerBatchUuid, "").getFilters()
         });
-        const samples = await services.linkService.list({
-            filters: new FilterBuilder().addIn("uuid", results.items.map((item) => item.properties[sampleTrackerSampleUuid])).getFilters()
+        const results2 = await services.groupsService.list({
+            filters: new FilterBuilder()
+                .addEqual("properties.type", sampleTrackerSample)
+                .addEqual("properties." + sampleTrackerState, sampleState)
+                .addDoesNotExist(sampleTrackerBatchUuid).getFilters()
         });
-        console.log(samples);
-        const selections = results.items.map((item) => ({
+
+        const selections = results.items.concat(results2.items).map((item) => ({
             sample: item,
             value: false,
             startingValue: false
@@ -100,13 +108,13 @@ export const openBatchCreateDialog = (editExisting?: GroupResource) =>
             formup.selfUuid = editExisting.uuid;
             formup.name = editExisting.name;
             formup.state = editExisting.properties[sampleTrackerState];
-            const results2 = await services.groupsService.list({
+            const results3 = await services.groupsService.list({
                 filters: new FilterBuilder()
                     .addEqual("properties.type", sampleTrackerSample)
                     .addEqual("properties." + sampleTrackerBatchUuid, editExisting.uuid)
                     .getFilters()
             });
-            for (const item of results2.items) {
+            for (const item of results3.items) {
                 selections.push({
                     sample: item,
                     value: true,
