@@ -3,22 +3,22 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { dialogActions } from "~/store/dialog/dialog-actions";
-import { WithDialogProps } from '~/store/dialog/with-dialog';
-import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { ServiceRepository } from "~/services/services";
+import { dialogActions } from "store/dialog/dialog-actions";
+import { WithDialogProps } from 'store/dialog/with-dialog';
+import { FormDialog } from 'components/form-dialog/form-dialog';
+import { ServiceRepository } from "services/services";
 import { compose, Dispatch } from "redux";
 import { reduxForm, WrappedFieldProps, InjectedFormProps, Field, startSubmit, reset } from 'redux-form';
-import { RootState } from '~/store/store';
-import { TextField } from "~/components/text-field/text-field";
-import { getResource } from "~/store/resources/resources";
+import { RootState } from 'store/store';
+import { TextField } from "components/text-field/text-field";
+import { getResource } from "store/resources/resources";
 import { FormControl, InputLabel } from '@material-ui/core';
 import { MenuItem, Select } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { withStyles, WithStyles } from '@material-ui/core/styles';
-import { LinkResource } from "~/models/link";
-import { GroupClass } from "~/models/group";
-import { withDialog } from "~/store/dialog/with-dialog";
+import { LinkResource } from "models/link";
+import { GroupClass } from "models/group";
+import { withDialog } from "store/dialog/with-dialog";
 import { SAMPLE_CREATE_FORM_NAME, AnalysisState, biopsyListPanelActions } from "./biopsyList";
 import {
     sampleTrackerSample, sampleTrackerSampleType,
@@ -100,7 +100,7 @@ const SampleAddFields = () => <span>
     <div>
         <Field
             name='sampleType'
-            component={SampleTypeSelect}
+            component={SampleTypeSelect as any}
             validate={mustBeDefined}
         />
     </div>
@@ -108,33 +108,33 @@ const SampleAddFields = () => <span>
     <InputLabel>Sample time point</InputLabel>
     <Field
         name='timePoint'
-        component={TextField}
+        component={TextField as any}
         type="number" />
 
     <InputLabel>Aliquot</InputLabel>
     <Field
         name='aliquot'
-        component={TextField}
+        component={TextField as any}
         type="number" />
 
     <InputLabel>Sent for sequencing</InputLabel>
     <Field
         name='sentForSequencing'
-        component={TextField}
+        component={TextField as any}
         type="date"
     />
 
     <InputLabel>Sequencing completed</InputLabel>
     <Field
         name='sequencingCompleted'
-        component={TextField}
+        component={TextField as any}
         type="date"
     />
 
     <InputLabel>State</InputLabel>
     <div><Field
         name='state'
-        component={SampleStateSelect}
+        component={SampleStateSelect as any}
         validate={mustBeDefined}
     /></div>
 

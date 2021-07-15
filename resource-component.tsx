@@ -1,10 +1,10 @@
 import * as React from 'react';
-import { RootState } from '~/store/store';
-import { getResource } from "~/store/resources/resources";
-import { getProperty } from '~/store/properties/properties';
-import { Resource } from '~/models/resource';
+import { RootState } from 'store/store';
+import { getResource } from "store/resources/resources";
+import { getProperty } from 'store/properties/properties';
+import { Resource } from 'models/resource';
 import { DispatchProp, connect } from 'react-redux';
-import { GroupResource } from "~/models/group";
+import { GroupResource } from "models/group";
 
 export interface PropertiedResource extends Resource {
     name: string;

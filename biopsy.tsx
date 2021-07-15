@@ -3,27 +3,27 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
-import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { dialogActions } from "~/store/dialog/dialog-actions";
-import { ServiceRepository } from "~/services/services";
+import { WithDialogProps } from 'store/dialog/with-dialog';
+import { FormDialog } from 'components/form-dialog/form-dialog';
+import { dialogActions } from "store/dialog/dialog-actions";
+import { ServiceRepository } from "services/services";
 import { compose, Dispatch } from "redux";
 import { reduxForm, WrappedFieldProps, InjectedFormProps, Field, reset, startSubmit } from 'redux-form';
-import { withDialog } from "~/store/dialog/with-dialog";
-import { RootState } from '~/store/store';
-import { TextField } from "~/components/text-field/text-field";
+import { withDialog } from "store/dialog/with-dialog";
+import { RootState } from 'store/store';
+import { TextField } from "components/text-field/text-field";
 import { FormControl, InputLabel } from '@material-ui/core';
 import {
     patientRoutePath, patientBaseRoutePath
 } from './patientList';
 import { matchPath } from "react-router";
 import { MenuItem, Select } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { getResource } from "~/store/resources/resources";
+import { ArvadosTheme } from 'common/custom-theme';
+import { getResource } from "store/resources/resources";
 import { biopsyListPanelActions, BIOPSY_CREATE_FORM_NAME, openBiopsyCreateDialog } from "./biopsyList";
 import { DispatchProp, connect } from 'react-redux';
 import { withStyles, WithStyles } from '@material-ui/core/styles';
-import { GroupResource } from "~/models/group";
+import { GroupResource } from "models/group";
 
 import {
     sampleTrackerBiopsy, sampleTrackerCollectionType, sampleTrackerBiopsyType,
@@ -97,7 +97,7 @@ const BiopsyAddFields = () => <span>
     <InputLabel>Patient biopsy time point</InputLabel>
     <Field
         name='timePoint'
-        component={TextField}
+        component={TextField as any}
         type="number"
         validate={mustBeDefined}
     />
@@ -105,7 +105,7 @@ const BiopsyAddFields = () => <span>
     <InputLabel>Collection date</InputLabel>
     <Field
         name='collectedAt'
-        component={TextField}
+        component={TextField as any}
         type="date"
         validate={mustBeDefined}
     />
@@ -114,7 +114,7 @@ const BiopsyAddFields = () => <span>
     <div>
         <Field
             name='collectionType'
-            component={CollectionTypeSelect}
+            component={CollectionTypeSelect as any}
             validate={mustBeDefined}
         />
     </div>
@@ -123,21 +123,21 @@ const BiopsyAddFields = () => <span>
     <div>
         <Field
             name='biopsyType'
-            component={BiopsyTypeSelect}
+            component={BiopsyTypeSelect as any}
             validate={mustBeDefined}
         />
     </div>
     <InputLabel>Flow started at</InputLabel>
     <Field
         name='flowStartedAt'
-        component={TextField}
+        component={TextField as any}
         type="date"
     />
 
     <InputLabel>Flow ended at</InputLabel>
     <Field
         name='flowEndedAt'
-        component={TextField}
+        component={TextField as any}
         type="date"
     />
 </span>;

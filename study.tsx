@@ -5,22 +5,22 @@
 import * as React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { compose, Dispatch } from "redux";
-import { propertiesActions } from "~/store/properties/properties-actions";
-import { getProperty } from '~/store/properties/properties';
-import { RootState } from '~/store/store';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
+import { propertiesActions } from "store/properties/properties-actions";
+import { getProperty } from 'store/properties/properties';
+import { RootState } from 'store/store';
+import { DataExplorer } from "views-components/data-explorer/data-explorer";
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { InjectedFormProps } from 'redux-form';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
-import { ProjectCreateFormDialogData } from '~/store/projects/project-create-actions';
-import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { ProjectNameField, ProjectDescriptionField } from '~/views-components/form-fields/project-form-fields';
-import { dialogActions } from "~/store/dialog/dialog-actions";
+import { WithDialogProps } from 'store/dialog/with-dialog';
+//import { ProjectCreateFormDialogData } from 'store/projects/project-create-actions';
+import { FormDialog } from 'components/form-dialog/form-dialog';
+import { ProjectNameField, ProjectDescriptionField } from 'views-components/form-fields/project-form-fields';
+import { dialogActions } from "store/dialog/dialog-actions";
 import { MenuItem, Tabs, Tab } from "@material-ui/core";
-import { createProject } from "~/store/workbench/workbench-actions";
+import { createProject } from "store/workbench/workbench-actions";
 import { reduxForm, initialize } from 'redux-form';
-import { withDialog } from "~/store/dialog/with-dialog";
-import { ServiceRepository } from "~/services/services";
+import { withDialog } from "store/dialog/with-dialog";
+import { ServiceRepository } from "services/services";
 import { sampleTrackerStudy } from "./metadataTerms";
 
 import {
