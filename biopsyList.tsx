@@ -3,33 +3,33 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { ServiceRepository } from "~/services/services";
+import { ServiceRepository } from "services/services";
 import { MiddlewareAPI, Dispatch } from "redux";
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { DispatchProp, connect } from 'react-redux';
-import { DataColumns } from '~/components/data-table/data-table';
-import { createTree } from '~/models/tree';
-import { SortDirection } from '~/components/data-table/data-column';
-import { bindDataExplorerActions } from "~/store/data-explorer/data-explorer-action";
+import { DataColumns } from 'components/data-table/data-table';
+import { createTree } from 'models/tree';
+import { SortDirection } from 'components/data-table/data-column';
+import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { Typography } from '@material-ui/core';
 import { initialize } from 'redux-form';
-import { dialogActions } from "~/store/dialog/dialog-actions";
+import { dialogActions } from "store/dialog/dialog-actions";
 
 import {
     DataExplorerMiddlewareService,
     listResultsToDataExplorerItemsMeta,
     dataExplorerToListParams
-} from '~/store/data-explorer/data-explorer-middleware-service';
-import { LinkResource } from "~/models/link";
-import { ListResults } from '~/services/common-service/common-service';
-import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
-import { DataExplorer as DataExplorerState, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
-import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
-import { updateResources } from "~/store/resources/resources-actions";
-import { getProperty } from '~/store/properties/properties';
-import { getResource } from "~/store/resources/resources";
-import { propertiesActions } from "~/store/properties/properties-actions";
-import { loadResource } from "~/store/resources/resources-actions";
+} from 'store/data-explorer/data-explorer-middleware-service';
+import { LinkResource } from "models/link";
+import { ListResults } from 'services/common-service/common-service';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { DataExplorer as DataExplorerState, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
+import { FilterBuilder, joinFilters } from "services/api/filter-builder";
+import { updateResources } from "store/resources/resources-actions";
+import { getProperty } from 'store/properties/properties';
+import { getResource } from "store/resources/resources";
+import { propertiesActions } from "store/properties/properties-actions";
+import { loadResource } from "store/resources/resources-actions";
 
 import { ResourceComponent, MultiResourceComponent, PropertiedResource } from "./resource-component";
 import { RunProcessComponent } from "./run-process";
@@ -324,7 +324,7 @@ export class BiopsyListPanelMiddlewareService extends DataExplorerMiddlewareServ
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
 
             const reverse = {};
-            const batches = [];
+            const batches: any[] = [];
             for (const i of response2.items) {
                 const sid = i.properties[sampleTrackerBiopsyUuid];
                 const lst = reverse[sid] || [];

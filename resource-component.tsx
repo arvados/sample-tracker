@@ -1,10 +1,14 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 import * as React from 'react';
-import { RootState } from '~/store/store';
-import { getResource } from "~/store/resources/resources";
-import { getProperty } from '~/store/properties/properties';
-import { Resource } from '~/models/resource';
+import { RootState } from 'store/store';
+import { getResource } from "store/resources/resources";
+import { getProperty } from 'store/properties/properties';
+import { Resource } from 'models/resource';
 import { DispatchProp, connect } from 'react-redux';
-import { GroupResource } from "~/models/group";
+import { GroupResource } from "models/group";
 
 export interface PropertiedResource extends Resource {
     name: string;

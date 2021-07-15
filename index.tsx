@@ -4,22 +4,22 @@
 
 // Plugin UI for laboratory sample tracking
 
-import { PluginConfig } from '~/common/plugintypes';
+import { PluginConfig } from 'common/plugintypes';
 import * as React from 'react';
 import { Dispatch } from 'redux';
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { push } from "react-router-redux";
 import { Route, matchPath } from "react-router";
-import { RootStore } from '~/store/store';
-import { activateSidePanelTreeItem } from '~/store/side-panel-tree/side-panel-tree-actions';
-import { setBreadcrumbs, setSidePanelBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+import { RootStore } from 'store/store';
+import { activateSidePanelTreeItem } from 'store/side-panel-tree/side-panel-tree-actions';
+import { setBreadcrumbs, setSidePanelBreadcrumbs } from 'store/breadcrumbs/breadcrumbs-actions';
 import { Location } from 'history';
-import { handleFirstTimeLoad } from '~/store/workbench/workbench-actions';
-import { dataExplorerMiddleware } from "~/store/data-explorer/data-explorer-middleware";
-import { getResource } from "~/store/resources/resources";
-import { loadResource } from "~/store/resources/resources-actions";
-import { GroupResource } from "~/models/group";
-import { addMenuActionSet } from '~/views-components/context-menu/context-menu';
+import { handleFirstTimeLoad } from 'store/workbench/workbench-actions';
+import { dataExplorerMiddleware } from "store/data-explorer/data-explorer-middleware";
+import { getResource } from "store/resources/resources";
+import { loadResource } from "store/resources/resources-actions";
+import { GroupResource } from "models/group";
+import { addMenuActionSet } from 'views-components/context-menu/context-menu';
 
 import {
     StudyListMainPanel,

@@ -5,24 +5,24 @@
 import * as React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { compose, Dispatch } from "redux";
-import { propertiesActions } from "~/store/properties/properties-actions";
-import { getProperty } from '~/store/properties/properties';
-import { RootState } from '~/store/store';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
+import { propertiesActions } from "store/properties/properties-actions";
+import { getProperty } from 'store/properties/properties';
+import { RootState } from 'store/store';
+import { DataExplorer } from "views-components/data-explorer/data-explorer";
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { InjectedFormProps, Field, WrappedFieldProps, reduxForm, startSubmit, reset } from 'redux-form';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
-import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { ProjectNameField } from '~/views-components/form-fields/project-form-fields';
-import { dialogActions } from "~/store/dialog/dialog-actions";
+import { WithDialogProps } from 'store/dialog/with-dialog';
+import { FormDialog } from 'components/form-dialog/form-dialog';
+import { ProjectNameField } from 'views-components/form-fields/project-form-fields';
+import { dialogActions } from "store/dialog/dialog-actions";
 import { MenuItem } from "@material-ui/core";
-import { withDialog } from "~/store/dialog/with-dialog";
-import { ServiceRepository } from "~/services/services";
+import { withDialog } from "store/dialog/with-dialog";
+import { ServiceRepository } from "services/services";
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import Checkbox from '@material-ui/core/Checkbox';
 import { FormControl, InputLabel } from '@material-ui/core';
-import { GroupClass } from "~/models/group";
+import { GroupClass } from "models/group";
 
 import {
     batchListPanelActions,
@@ -52,7 +52,7 @@ const BatchAddFields = (props: DialogProjectProps) => <span>
     <InputLabel>State</InputLabel>
     <div><Field
         name='state'
-        component={SampleStateSelect}
+        component={SampleStateSelect as any}
         validate={mustBeDefined}
     /></div>
     <List>

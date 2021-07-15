@@ -4,28 +4,28 @@
 
 import * as React from 'react';
 
-import { ServiceRepository } from "~/services/services";
+import { ServiceRepository } from "services/services";
 import { MiddlewareAPI, Dispatch } from "redux";
-import { RootState } from '~/store/store';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { DataColumns } from '~/components/data-table/data-table';
-import { createTree } from '~/models/tree';
-import { ResourceName } from '~/views-components/data-explorer/renderers';
-import { SortDirection } from '~/components/data-table/data-column';
-import { bindDataExplorerActions } from "~/store/data-explorer/data-explorer-action";
+import { RootState } from 'store/store';
+import { DataExplorer } from "views-components/data-explorer/data-explorer";
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { DataColumns } from 'components/data-table/data-table';
+import { createTree } from 'models/tree';
+import { ResourceName } from 'views-components/data-explorer/renderers';
+import { SortDirection } from 'components/data-table/data-column';
+import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import {
     DataExplorerMiddlewareService,
     listResultsToDataExplorerItemsMeta,
     dataExplorerToListParams
-} from '~/store/data-explorer/data-explorer-middleware-service';
-import { GroupResource } from "~/models/group";
-import { ListResults } from '~/services/common-service/common-service';
-import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
-import { DataExplorer as DataExplorerState, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
-import { FilterBuilder, joinFilters } from "~/services/api/filter-builder";
-import { getProperty } from '~/store/properties/properties';
-import { updateResources } from "~/store/resources/resources-actions";
+} from 'store/data-explorer/data-explorer-middleware-service';
+import { GroupResource } from "models/group";
+import { ListResults } from 'services/common-service/common-service';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { DataExplorer as DataExplorerState, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
+import { FilterBuilder, joinFilters } from "services/api/filter-builder";
+import { getProperty } from 'store/properties/properties';
+import { updateResources } from "store/resources/resources-actions";
 import { sampleTrackerPatient } from "./metadataTerms";
 
 export const PATIENT_LIST_PANEL_ID = "patientListPanel";

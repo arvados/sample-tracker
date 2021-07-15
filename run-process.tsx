@@ -1,12 +1,16 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 import * as React from 'react';
-import { RootState } from '~/store/store';
-import { ContainerResource } from "~/models/container";
-import { ContainerRequestResource } from "~/models/container-request";
-import { openRunProcess } from '~/store/workflow-panel/workflow-panel-actions';
-import { navigateTo } from '~/store/navigation/navigation-action';
+import { RootState } from 'store/store';
+import { ContainerResource } from "models/container";
+import { ContainerRequestResource } from "models/container-request";
+import { openRunProcess } from 'store/workflow-panel/workflow-panel-actions';
+import { navigateTo } from 'store/navigation/navigation-action';
 import { Button } from '@material-ui/core';
-import { getResource } from "~/store/resources/resources";
-import { getProperty } from '~/store/properties/properties';
+import { getResource } from "store/resources/resources";
+import { getProperty } from 'store/properties/properties';
 import { DispatchProp, connect } from 'react-redux';
 import { PropertiedResource } from "./resource-component";
 
