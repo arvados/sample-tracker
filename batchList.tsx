@@ -17,7 +17,8 @@ import {
     listResultsToDataExplorerItemsMeta,
     dataExplorerToListParams
 } from 'store/data-explorer/data-explorer-middleware-service';
-import { GroupResource } from "models/group";
+import { GroupResource, GroupClass } from "models/group";
+import { CollectionResource } from "models/collection";
 import { ListResults } from 'services/common-service/common-service';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { DataExplorer as DataExplorerState, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
@@ -28,14 +29,13 @@ import { getResource } from "store/resources/resources";
 import { Typography } from '@material-ui/core';
 import { initialize } from 'redux-form';
 import { dialogActions } from "store/dialog/dialog-actions";
-import { AnalysisState } from './biopsyList';
 import { StudyPathId } from './patient';
 import { matchPath } from "react-router";
 import { propertiesActions } from "store/properties/properties-actions";
 import { studyRoutePath } from './studyList';
 import {
     sampleTrackerBatch, sampleTrackerSample, sampleTrackerState,
-    sampleTrackerBatchUuid
+    sampleTrackerBatchId, AnalysisState, sampleTrackerBatchList
 } from './metadataTerms';
 import { ResourceComponent } from './resource-component';
 import { RunProcessComponent } from './run-process';
@@ -59,7 +59,7 @@ export interface BatchCreateFormDialogData {
     name: string;
     state: AnalysisState;
     selections: {
-        sample: GroupResource,
+        sample: CollectionResource,
         value: boolean,
         startingValue: boolean,
     }[];
@@ -77,22 +77,15 @@ export const BatchNameComponent = connect(
 export const openBatchCreateDialog = (editExisting?: GroupResource) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
 
-        let sampleState = "NEW";
-        if (editExisting) {
-            sampleState = editExisting.properties[sampleTrackerState];
-        }
-
-        const results = await services.groupsService.list({
+        const results = await services.collectionService.list({
             filters: new FilterBuilder()
                 .addEqual("properties.type", sampleTrackerSample)
-                .addEqual("properties." + sampleTrackerState, sampleState)
-                .addEqual("properties." + sampleTrackerBatchUuid, "").getFilters()
+                .addEqual("properties." + sampleTrackerBatchId, "").getFilters()
         });
-        const results2 = await services.groupsService.list({
+        const results2 = await services.collectionService.list({
             filters: new FilterBuilder()
                 .addEqual("properties.type", sampleTrackerSample)
-                .addEqual("properties." + sampleTrackerState, sampleState)
-                .addDoesNotExist(sampleTrackerBatchUuid).getFilters()
+                .addDoesNotExist(sampleTrackerBatchId).getFilters()
         });
 
         const selections = results.items.concat(results2.items).map((item) => ({
@@ -101,17 +94,37 @@ export const openBatchCreateDialog = (editExisting?: GroupResource) =>
             startingValue: false
         }));
 
-        const studyid = matchPath<StudyPathId>(getState().router.location!.pathname, { path: studyRoutePath, exact: true });
+        //const studyid = matchPath<StudyPathId>(getState().router.location!.pathname, { path: studyRoutePath, exact: true });
 
-        const formup: Partial<BatchCreateFormDialogData> = { selections, ownerUuid: studyid!.params.uuid };
+        const batchProjects = await services.groupsService.list({
+            filters: new FilterBuilder()
+                .addEqual("group_class", "project")
+                .addEqual("properties.type", sampleTrackerBatchList).getFilters()
+        });
+        const state = getState();
+        let writableProjects = batchProjects.items.filter((f) => f.writableBy.includes(state.auth.user!.uuid));
+        let prj: GroupResource;
+        if (writableProjects.length == 0) {
+            prj = await services.groupsService.create({
+                groupClass: GroupClass.PROJECT,
+                name: "Batches",
+                properties: {
+                    type: sampleTrackerBatchList
+                }
+            });
+        } else {
+            prj = writableProjects[0];
+        }
+
+        const formup: Partial<BatchCreateFormDialogData> = { selections, ownerUuid: prj.uuid };
         if (editExisting) {
             formup.selfUuid = editExisting.uuid;
             formup.name = editExisting.name;
             formup.state = editExisting.properties[sampleTrackerState];
-            const results3 = await services.groupsService.list({
+            const results3 = await services.collectionService.list({
                 filters: new FilterBuilder()
                     .addEqual("properties.type", sampleTrackerSample)
-                    .addEqual("properties." + sampleTrackerBatchUuid, editExisting.uuid)
+                    .addEqual("properties." + sampleTrackerBatchId, editExisting.name)
                     .getFilters()
             });
             for (const item of results3.items) {
@@ -147,6 +160,11 @@ export const batchListPanelColumns: DataColumns<string> = [
                 workflowToRun="x2b8c-7fd4e-oi0uz0pt4qnpk7v" />} />
     }
 ];
+
+export const openBatchListPanel = (dispatch: Dispatch) => {
+    dispatch(batchListPanelActions.SET_COLUMNS({ columns: batchListPanelColumns }));
+    dispatch(batchListPanelActions.REQUEST_ITEMS());
+};
 
 export const BatchListMainPanel = () =>
     <DataExplorer

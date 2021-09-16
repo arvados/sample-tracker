@@ -7,8 +7,6 @@ import * as React from 'react';
 import { ServiceRepository } from "services/services";
 import { MiddlewareAPI, Dispatch } from "redux";
 import { RootState } from 'store/store';
-import { DataExplorer } from "views-components/data-explorer/data-explorer";
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { DataColumns } from 'components/data-table/data-table';
 import { createTree } from 'models/tree';
 import { ResourceName } from 'views-components/data-explorer/renderers';
@@ -26,7 +24,12 @@ import { DataExplorer as DataExplorerState, getDataExplorer } from 'store/data-e
 import { FilterBuilder, joinFilters } from "services/api/filter-builder";
 import { getProperty } from 'store/properties/properties';
 import { updateResources } from "store/resources/resources-actions";
-import { sampleTrackerPatient } from "./metadataTerms";
+import {
+    sampleTrackerPatient, sampleTrackerPatientMRN,
+    sampleTrackerPatientName, sampleTrackerPatientDOB,
+    sampleTrackerPatientPhysician
+} from "./metadataTerms";
+import { ResourceComponent, PropertyComponent } from "./resource-component";
 
 export const PATIENT_LIST_PANEL_ID = "patientListPanel";
 export const patientListPanelActions = bindDataExplorerActions(PATIENT_LIST_PANEL_ID);
@@ -36,7 +39,11 @@ export const patientBaseRoutePath = "/SampleTracker/Patient";
 export const patientRoutePath = patientBaseRoutePath + "/:uuid";
 
 enum PatientPanelColumnNames {
-    NAME = "Name"
+    NAME = "Patient Study ID",
+    PATIENT_MRN = "MRN",
+    PATIENT_NAME = "Patient Name",
+    PATIENT_DOB = "Patient DoB",
+    PATIENT_PHYSICIAN = "Treating Physician",
 }
 
 export const patientListPanelColumns: DataColumns<string> = [
@@ -47,20 +54,58 @@ export const patientListPanelColumns: DataColumns<string> = [
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
+    },
+    {
+        name: PatientPanelColumnNames.PATIENT_NAME,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: createTree(),
+        render: uuid => <ResourceComponent uuid={uuid}
+            render={rsc => <PropertyComponent resource={rsc} propertyname={sampleTrackerPatientName} />} />
+    },
+    {
+        name: PatientPanelColumnNames.PATIENT_MRN,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: createTree(),
+        render: uuid => <ResourceComponent uuid={uuid}
+            render={rsc => <PropertyComponent resource={rsc} propertyname={sampleTrackerPatientMRN} />} />
+    },
+    {
+        name: PatientPanelColumnNames.PATIENT_DOB,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: createTree(),
+        render: uuid => <ResourceComponent uuid={uuid}
+            render={rsc => <PropertyComponent resource={rsc} propertyname={sampleTrackerPatientDOB} />} />
+    },
+    {
+        name: PatientPanelColumnNames.PATIENT_PHYSICIAN,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.NONE,
+        filters: createTree(),
+        render: uuid => <ResourceComponent uuid={uuid}
+            render={rsc => <PropertyComponent resource={rsc} propertyname={sampleTrackerPatientPhysician} />} />
     }
 ];
 
-export const PatientListPanel = () =>
-    <DataExplorer
-        id={PATIENT_LIST_PANEL_ID}
-        onRowClick={(uuid: string) => { }}
-        onRowDoubleClick={(uuid: string) => { }}
-        onContextMenu={(event: React.MouseEvent<HTMLElement>, resourceUuid: string) => { }}
-        contextMenuColumn={true}
-        dataTableDefaultView={
-            <DataTableDefaultView />
-        } />;
 
+/* export const PatientListPanel = connect()(
+ *     ({ dispatch }: DispatchProp<any>) =>
+ *         <DataExplorer
+ *             id={PATIENT_LIST_PANEL_ID}
+ *             onRowClick={(uuid: string) => { }}
+ *             onRowDoubleClick={(uuid: string) => { }}
+ *             onContextMenu={handleContextMenu(dispatch)}
+ *             contextMenuColumn={true}
+ *             dataTableDefaultView={
+ *                 <DataTableDefaultView />
+ *             } />);
+ *  */
 const setItems = (listResults: ListResults<GroupResource>) =>
     patientListPanelActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),

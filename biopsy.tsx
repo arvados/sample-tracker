@@ -27,8 +27,8 @@ import { GroupResource } from "models/group";
 
 import {
     sampleTrackerBiopsy, sampleTrackerCollectionType, sampleTrackerBiopsyType,
-    sampleTrackerCollectedAt, sampleTrackerTimePoint, sampleTrackerFlowStartedAt,
-    sampleTrackerFlowCompletedAt
+    sampleTrackerCollectedAt, sampleTrackerTimePoint, CollectionType, BiopsyType,
+    sampleTrackerBiopsyRedcapId
 } from './metadataTerms';
 
 
@@ -38,8 +38,8 @@ export interface BiopsyCreateFormDialogData {
     biopsyType: BiopsyType;
     collectedAt: string;
     timePoint: number;
-    flowStartedAt: string;
-    flowCompletedAt: string;
+    biopsyUuid: string;
+    redcapId: string;
 }
 
 type DialogBiopsyProps = WithDialogProps<{ updating: boolean }> & InjectedFormProps<BiopsyCreateFormDialogData>;
@@ -52,15 +52,6 @@ const styles = withStyles<CssRules>((theme: ArvadosTheme) => ({
     }
 }));
 
-enum CollectionType {
-    PERIPHERAL_BLOOD = "peripheral_blood",
-    BONE_MARROW = "bone_marrow"
-}
-
-enum BiopsyType {
-    TUMOR = "tumor",
-    NORMAL = "normal"
-}
 
 export const CollectionTypeSelect = styles(
     ({ classes, input }: WrappedFieldProps & WithStyles<CssRules>) =>
@@ -69,10 +60,10 @@ export const CollectionTypeSelect = styles(
                 {...input}>
                 <MenuItem value={CollectionType.PERIPHERAL_BLOOD}>
                     Peripheral Blood
-		</MenuItem>
+                </MenuItem>
                 <MenuItem value={CollectionType.BONE_MARROW}>
                     Bone Marrow
-		</MenuItem>
+                </MenuItem>
             </Select>
         </FormControl>);
 
@@ -83,10 +74,10 @@ export const BiopsyTypeSelect = styles(
                 {...input}>
                 <MenuItem value={BiopsyType.TUMOR}>
                     Tumor
-		</MenuItem>
+                </MenuItem>
                 <MenuItem value={BiopsyType.NORMAL}>
                     Normal
-		</MenuItem>
+                </MenuItem>
             </Select>
         </FormControl>);
 
@@ -127,19 +118,6 @@ const BiopsyAddFields = () => <span>
             validate={mustBeDefined}
         />
     </div>
-    <InputLabel>Flow started at</InputLabel>
-    <Field
-        name='flowStartedAt'
-        component={TextField as any}
-        type="date"
-    />
-
-    <InputLabel>Flow ended at</InputLabel>
-    <Field
-        name='flowEndedAt'
-        component={TextField as any}
-        type="date"
-    />
 </span>;
 
 const DialogBiopsyCreate = (props: DialogBiopsyProps) =>
@@ -179,22 +157,33 @@ const createBiopsy = (data: BiopsyCreateFormDialogData) =>
 
         dispatch(startSubmit(BIOPSY_CREATE_FORM_NAME));
         const biopsyId = makeBiopsyId(data, getState());
-        await services.linkService.create({
+        const grp = {
             ownerUuid: data.patientUuid,
             name: biopsyId,
-            linkClass: sampleTrackerBiopsy,
+            group_class: "filter",
             properties: {
+                "type": sampleTrackerBiopsy,
+                "filters": [["uuid", "is_a", "arvados#collection"],
+                ["collections.owner_uuid", "=", data.patientUuid],
+                ["collections.name", "like", biopsyId + "%"]],
                 [sampleTrackerCollectionType]: data.collectionType,
                 [sampleTrackerBiopsyType]: data.biopsyType,
                 [sampleTrackerCollectedAt]: data.collectedAt,
                 [sampleTrackerTimePoint]: data.timePoint,
-                [sampleTrackerFlowStartedAt]: data.flowStartedAt,
-                [sampleTrackerFlowCompletedAt]: data.flowCompletedAt,
+                [sampleTrackerBiopsyRedcapId]: data.redcapId,
             },
-        });
-        dispatch(dialogActions.CLOSE_DIALOG({ id: BIOPSY_CREATE_FORM_NAME }));
-        dispatch(reset(BIOPSY_CREATE_FORM_NAME));
-        dispatch(biopsyListPanelActions.REQUEST_ITEMS());
+        };
+        try {
+            if (data.biopsyUuid) {
+                await services.groupsService.update(data.biopsyUuid, grp);
+            } else {
+                await services.groupsService.create(grp);
+            }
+        } finally {
+            dispatch(dialogActions.CLOSE_DIALOG({ id: BIOPSY_CREATE_FORM_NAME }));
+            dispatch(reset(BIOPSY_CREATE_FORM_NAME));
+            dispatch(biopsyListPanelActions.REQUEST_ITEMS());
+        }
     };
 
 export const CreateBiopsyDialog = compose(

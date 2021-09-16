@@ -25,12 +25,18 @@ import { FilterBuilder, joinFilters } from "services/api/filter-builder";
 import { updateResources } from "store/resources/resources-actions";
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { sampleTrackerStudy } from "./metadataTerms";
+import { openContextMenu } from 'store/context-menu/context-menu-actions';
+import { ResourceKind } from 'models/resource';
+import { DispatchProp, connect } from 'react-redux';
+import { treePickerActions } from "store/tree-picker/tree-picker-actions";
+import { SIDE_PANEL_TREE } from "store/side-panel-tree/side-panel-tree-actions";
+import { getNodeAncestors, getNodeAncestorsIds, getNode, TreeNode, initTreeNode, TreeNodeStatus } from 'models/tree';
 
 export const STUDY_LIST_PANEL_ID = "studyPanel";
 export const studyListPanelActions = bindDataExplorerActions(STUDY_LIST_PANEL_ID);
 export const studyListRoutePath = "/sampleTracker/Studies";
 export const studyRoutePath = studyListRoutePath + "/:uuid";
-
+export const STUDY_CONTEXT_MENU = "studyContextMenu";
 
 enum StudyPanelColumnNames {
     NAME = "Name"
@@ -53,16 +59,33 @@ export const openStudyListPanel = (dispatch: Dispatch) => {
     dispatch(studyListPanelActions.REQUEST_ITEMS());
 };
 
-export const StudyListMainPanel = () =>
-    <DataExplorer
-        id={STUDY_LIST_PANEL_ID}
-        onRowClick={(uuid: string) => { }}
-        onRowDoubleClick={(uuid: string) => { }}
-        onContextMenu={(event: React.MouseEvent<HTMLElement>, resourceUuid: string) => { }}
-        contextMenuColumn={true}
-        dataTableDefaultView={
-            <DataTableDefaultView />
-        } />;
+
+const handleContextMenu = (dispatch: Dispatch) =>
+    (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+        // const { resources } = this.props;
+        // const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
+        // const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
+        dispatch<any>(openContextMenu(event, {
+            name: "",
+            uuid: resourceUuid,
+            ownerUuid: "",
+            isTrashed: false,
+            kind: ResourceKind.NONE,
+            menuKind: STUDY_CONTEXT_MENU
+        }));
+    };
+
+export const StudyListMainPanel = connect()(
+    ({ dispatch }: DispatchProp<any>) =>
+        <DataExplorer
+            id={STUDY_LIST_PANEL_ID}
+            onRowClick={(uuid: string) => { }}
+            onRowDoubleClick={(uuid: string) => { }}
+            onContextMenu={handleContextMenu(dispatch)}
+            contextMenuColumn={true}
+            dataTableDefaultView={
+                <DataTableDefaultView />
+            } />);
 
 
 const setItems = (listResults: ListResults<GroupResource>) =>
@@ -96,6 +119,7 @@ const getParams = (dataExplorer: DataExplorerState) => ({
     filters: getFilters(dataExplorer),
 });
 
+
 export class StudyListPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
@@ -114,6 +138,14 @@ export class StudyListPanelMiddlewareService extends DataExplorerMiddlewareServi
             }
             api.dispatch(updateResources(response.items));
             api.dispatch(setItems(response));
+
+            const nodes = response.items.map(item => initTreeNode({ id: item.uuid, value: item, parent: "Studies" }));
+
+            api.dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+                id: "Studies",
+                pickerId: SIDE_PANEL_TREE,
+                nodes
+            }));
         } catch (e) {
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             api.dispatch(studyListPanelActions.SET_ITEMS({

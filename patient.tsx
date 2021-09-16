@@ -13,58 +13,131 @@ import { DataTableDefaultView } from 'components/data-table-default-view/data-ta
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourceKind } from 'models/resource';
 import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
-import { InjectedFormProps, reduxForm, initialize } from 'redux-form';
+import { InjectedFormProps, reduxForm, Field, initialize, reset, startSubmit } from 'redux-form';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { ProjectCreateFormDialogData } from 'store/projects/project-create-actions';
 import { FormDialog } from 'components/form-dialog/form-dialog';
 import { ProjectNameField } from 'views-components/form-fields/project-form-fields';
 import { dialogActions } from "store/dialog/dialog-actions";
 import { withDialog } from "store/dialog/with-dialog";
-import { MenuItem } from "@material-ui/core";
-import { createProject } from "store/workbench/workbench-actions";
+import { MenuItem, InputLabel } from "@material-ui/core";
 import { matchPath } from "react-router";
 import { ServiceRepository } from "services/services";
 import { FilterBuilder } from "services/api/filter-builder";
 import { getResource } from "store/resources/resources";
 import { GroupResource } from "models/group";
+import { PropertiedResource } from "./resource-component";
+import { TextField } from "components/text-field/text-field";
+import {
+    loadSidePanelTreeProjects,
+} from 'store/side-panel-tree/side-panel-tree-actions';
+import * as projectCreateActions from 'store/projects/project-create-actions';
 
 import { PATIENT_PANEL_CURRENT_UUID } from './patientList';
-import { sampleTrackerPatient } from './metadataTerms';
+import {
+    sampleTrackerPatient, sampleTrackerPatientName, sampleTrackerPatientMRN,
+    sampleTrackerPatientDOB, sampleTrackerPatientPhysician, sampleTrackerStudyPrefix
+} from './metadataTerms';
 import {
     BIOPSY_LIST_PANEL_ID, biopsyListPanelActions,
     biopsyBaseRoutePath, biopsyListPanelColumns,
     openSampleCreateDialog
 } from './biopsyList';
 import { studyRoutePath } from './studyList';
+import { patientBaseRoutePath, patientListPanelActions } from './patientList';
 
 export const PATIENT_BIOPSY_MENU = "Biopsy Tracker - Patient Biopsy menu";
 const PATIENT_CREATE_FORM_NAME = "patientCreateFormName";
 
-type DialogProjectProps = WithDialogProps<{}> & InjectedFormProps<ProjectCreateFormDialogData>;
+export interface PatientCreateFormDialogData {
+    ownerUuid: string;
+    uuid: string;
+    description: string;
+    name: string;
+    patientName: string;
+    MRN: string;
+    DOB: string;
+    physician: string;
+}
+
+type DialogProjectProps = WithDialogProps<{ updating: boolean }> & InjectedFormProps<PatientCreateFormDialogData>;
 
 const PatientAddFields = () => <span>
     <ProjectNameField label="Patient anonymized identifier" />
+    <InputLabel>Patient Name</InputLabel>
+    <Field
+        name='patientName'
+        component={TextField as any}
+    />
+    <InputLabel>Medical Record Number (MRN)</InputLabel>
+    <Field
+        name='MRN'
+        component={TextField as any}
+    />
+    <InputLabel>Date of Birth (YYYY-MM-DD)</InputLabel>
+    <Field
+        name='DOB'
+        component={TextField as any}
+        type="date"
+    />
+    <InputLabel>Treating Physician</InputLabel>
+    <Field
+        name='physician'
+        component={TextField as any}
+    />
 </span>;
 
 const DialogPatientCreate = (props: DialogProjectProps) =>
     <FormDialog
-        dialogTitle='Add patient'
+        dialogTitle={props.data.updating ? "Update Patient information" : 'Add Patient'}
         formFields={PatientAddFields}
-        submitLabel='Add a patient'
+        submitLabel={props.data.updating ? "Update Patient information" : 'Add Patient'}
         enableWhenPristine={true}
         {...props}
     />;
+
+const createUpdatePatient = (data: PatientCreateFormDialogData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(startSubmit(PATIENT_CREATE_FORM_NAME));
+        try {
+            const g = {
+                name: data.name,
+                ownerUuid: data.ownerUuid,
+                description: "",
+                properties: {
+                    [sampleTrackerPatientName]: data.patientName,
+                    [sampleTrackerPatientMRN]: data.MRN,
+                    [sampleTrackerPatientDOB]: data.DOB,
+                    [sampleTrackerPatientPhysician]: data.physician,
+                    type: sampleTrackerPatient,
+                }
+            };
+            if (data.uuid) {
+                await services.groupsService.update(data.uuid, g);
+            } else {
+                const newProject = await dispatch<any>(projectCreateActions.createProject(g));
+                if (newProject) {
+                    await dispatch<any>(loadSidePanelTreeProjects(newProject.ownerUuid));
+                }
+            }
+        } finally {
+            dispatch(dialogActions.CLOSE_DIALOG({ id: PATIENT_CREATE_FORM_NAME }));
+            dispatch(reset(PATIENT_CREATE_FORM_NAME));
+            dispatch(patientListPanelActions.REQUEST_ITEMS());
+        }
+    };
 
 export const CreatePatientDialog = compose(
     withDialog(PATIENT_CREATE_FORM_NAME),
     reduxForm<ProjectCreateFormDialogData>({
         form: PATIENT_CREATE_FORM_NAME,
         onSubmit: (data, dispatch) => {
-            data.properties = { type: sampleTrackerPatient };
-            dispatch(createProject(data));
+            dispatch(createUpdatePatient(data));
         }
     })
 )(DialogPatientCreate);
+
+
 
 export interface MenuItemProps {
     className?: string;
@@ -83,7 +156,7 @@ export const patientsMapStateToProps = (state: RootState) => {
         const resource = getResource<GroupResource>(state.router.location!.pathname)(state.resources);
         if (resource) {
             props.studyUuid = studyid.params.uuid;
-            props.patientPrefix = "P_";
+            props.patientPrefix = resource.properties[sampleTrackerStudyPrefix];
         }
     }
     return props;
@@ -92,11 +165,44 @@ export const patientsMapStateToProps = (state: RootState) => {
 const openPatientCreateDialog = (studyUuid?: string, patientPrefix?: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         if (!studyUuid || !patientPrefix) { return; }
-        const results = await services.projectService.list({ filters: new FilterBuilder().addEqual("properties.type", sampleTrackerPatient).getFilters() });
-        const name = patientPrefix + (results.itemsAvailable + 1);
+        const results = await services.projectService.list({
+            filters: new FilterBuilder().
+                addEqual("properties.type", sampleTrackerPatient).
+                addEqual("owner_uuid", studyUuid).
+                getFilters()
+        });
+        let pid = "" + (results.itemsAvailable + 1);
+        pid = "0".repeat(4 - pid.length) + pid;
+        const name = patientPrefix + "_" + pid;
         dispatch(initialize(PATIENT_CREATE_FORM_NAME, { name, ownerUuid: studyUuid }));
-        dispatch(dialogActions.OPEN_DIALOG({ id: PATIENT_CREATE_FORM_NAME, data: {} }));
+        dispatch(dialogActions.OPEN_DIALOG({ id: PATIENT_CREATE_FORM_NAME, data: { updating: false } }));
     };
+
+const openPatientEditDialog = (patientUuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const patient = getResource<PropertiedResource>(patientUuid)(getState().resources);
+        if (patient) {
+            dispatch(initialize(PATIENT_CREATE_FORM_NAME, {
+                uuid: patient.uuid.substr(patientBaseRoutePath.length + 1),
+                ownerUuid: patient.ownerUuid,
+                name: patient.name,
+                patientName: patient.properties[sampleTrackerPatientName],
+                MRN: patient.properties[sampleTrackerPatientMRN],
+                DOB: patient.properties[sampleTrackerPatientDOB],
+                physician: patient.properties[sampleTrackerPatientPhysician],
+            }));
+        }
+        dispatch(dialogActions.OPEN_DIALOG({ id: PATIENT_CREATE_FORM_NAME, data: { updating: true } }));
+    };
+
+export const patientListActionSet: ContextMenuActionSet = [[
+    {
+        name: "Edit",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openPatientEditDialog(resource.uuid));
+        }
+    },
+]];
 
 export const AddPatientMenuComponent = connect<{}, {}, MenuItemProps>(patientsMapStateToProps)(
     ({ studyUuid, patientPrefix, dispatch, className }: MenuItemProps & DispatchProp<any>) =>

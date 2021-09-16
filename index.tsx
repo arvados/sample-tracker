@@ -25,10 +25,10 @@ import {
     StudyListMainPanel,
     openStudyListPanel,
     StudyListPanelMiddlewareService, STUDY_LIST_PANEL_ID,
-    studyListRoutePath, studyRoutePath
+    studyListRoutePath, studyRoutePath, STUDY_CONTEXT_MENU
 } from './studyList';
 import {
-    openStudyPanel, StudyMainPanel, CreateStudyDialog, AddStudyMenuComponent
+    openStudyPanel, StudyMainPanel, CreateStudyDialog, AddStudyMenuComponent, studyActionSet, PATIENT_CONTEXT_MENU
 } from './study';
 
 import {
@@ -38,7 +38,7 @@ import {
 } from './patientList';
 import {
     openPatientPanel, PatientMainPanel, PATIENT_BIOPSY_MENU, patientBiopsyActionSet,
-    CreatePatientDialog, AddPatientMenuComponent, StudyPathId,
+    CreatePatientDialog, AddPatientMenuComponent, StudyPathId, patientListActionSet
 } from './patient';
 
 import {
@@ -54,12 +54,14 @@ import {
 } from './batch';
 import {
     BatchListPanelMiddlewareService, BATCH_LIST_PANEL_ID,
+    batchListRoutePath, BatchListMainPanel, openBatchListPanel
 } from './batchList';
 
 
 import { CreateSampleDialog } from './sample';
 
-const categoryName = "Studies";
+const studiesCategoryName = "Studies";
+const batchesCategoryName = "Batches";
 
 export const register = (pluginConfig: PluginConfig) => {
 
@@ -67,6 +69,7 @@ export const register = (pluginConfig: PluginConfig) => {
         elms.push(<Route path={studyListRoutePath} component={StudyListMainPanel} exact={true} />);
         elms.push(<Route path={studyRoutePath} component={StudyMainPanel} exact={true} />);
         elms.push(<Route path={patientRoutePath} component={PatientMainPanel} exact={true} />);
+        elms.push(<Route path={batchListRoutePath} component={BatchListMainPanel} exact={true} />);
         return elms;
     });
 
@@ -79,8 +82,12 @@ export const register = (pluginConfig: PluginConfig) => {
     });
 
     pluginConfig.navigateToHandlers.push((dispatch: Dispatch, getState: () => RootState, uuid: string) => {
-        if (uuid === categoryName) {
+        if (uuid === studiesCategoryName) {
             dispatch(push(studyListRoutePath));
+            return true;
+        }
+        if (uuid === batchesCategoryName) {
+            dispatch(push(batchListRoutePath));
             return true;
         }
         if (uuid && uuid.startsWith(studyListRoutePath)) {
@@ -94,15 +101,28 @@ export const register = (pluginConfig: PluginConfig) => {
         return false;
     });
 
-    pluginConfig.sidePanelCategories.push((cats: string[]): string[] => { cats.push(categoryName); return cats; });
+    pluginConfig.sidePanelCategories.push((cats: string[]): string[] => {
+        cats.push(studiesCategoryName);
+        cats.push(batchesCategoryName);
+        return cats;
+    });
 
     pluginConfig.locationChangeHandlers.push((store: RootStore, pathname: string): boolean => {
         if (matchPath(pathname, { path: studyListRoutePath, exact: true })) {
             store.dispatch(handleFirstTimeLoad(
                 (dispatch: Dispatch) => {
                     dispatch<any>(openStudyListPanel);
-                    dispatch<any>(activateSidePanelTreeItem(categoryName));
-                    dispatch<any>(setSidePanelBreadcrumbs(categoryName));
+                    dispatch<any>(activateSidePanelTreeItem(studiesCategoryName));
+                    dispatch<any>(setSidePanelBreadcrumbs(studiesCategoryName));
+                }));
+            return true;
+        }
+        if (matchPath(pathname, { path: batchListRoutePath, exact: true })) {
+            store.dispatch(handleFirstTimeLoad(
+                (dispatch: Dispatch) => {
+                    dispatch<any>(openBatchListPanel);
+                    dispatch<any>(activateSidePanelTreeItem(batchesCategoryName));
+                    dispatch<any>(setSidePanelBreadcrumbs(batchesCategoryName));
                 }));
             return true;
         }
@@ -111,11 +131,11 @@ export const register = (pluginConfig: PluginConfig) => {
             store.dispatch(handleFirstTimeLoad(
                 (dispatch: Dispatch) => {
                     dispatch<any>(openStudyPanel(studyid.params.uuid));
-                    // dispatch<any>(activateSidePanelTreeItem(categoryName));
+                    // dispatch<any>(activateSidePanelTreeItem(studiesCategoryName));
                     // const name = getProperty(PATIENT_PANEL_CURRENT_UUID)(state.properties),
                     const rsc = getResource<GroupResource>(pathname)(store.getState().resources);
                     if (rsc) {
-                        dispatch<any>(setBreadcrumbs([{ label: categoryName, uuid: categoryName }, { label: rsc.name, uuid: pathname }]));
+                        dispatch<any>(setBreadcrumbs([{ label: studiesCategoryName, uuid: studiesCategoryName }, { label: rsc.name, uuid: pathname }]));
                     }
                 }));
             return true;
@@ -125,13 +145,13 @@ export const register = (pluginConfig: PluginConfig) => {
             store.dispatch(handleFirstTimeLoad(
                 async (dispatch: Dispatch) => {
                     dispatch<any>(openPatientPanel(patientid.params.uuid));
-                    // dispatch<any>(activateSidePanelTreeItem(categoryName));
+                    // dispatch<any>(activateSidePanelTreeItem(studiesCategoryName));
                     const patientrsc = await dispatch<any>(loadResource(patientid.params.uuid));
                     if (patientrsc) {
                         const studyid = studyListRoutePath + "/" + patientrsc.ownerUuid;
                         const studyrsc = await dispatch<any>(loadResource(patientrsc.ownerUuid));
                         if (studyrsc) {
-                            dispatch<any>(setBreadcrumbs([{ label: categoryName, uuid: categoryName },
+                            dispatch<any>(setBreadcrumbs([{ label: studiesCategoryName, uuid: studiesCategoryName },
                             { label: studyrsc.name, uuid: studyid },
                             { label: patientrsc.name, uuid: pathname }]));
                         }
@@ -170,4 +190,6 @@ export const register = (pluginConfig: PluginConfig) => {
     });
 
     addMenuActionSet(PATIENT_BIOPSY_MENU, patientBiopsyActionSet);
+    addMenuActionSet(STUDY_CONTEXT_MENU, studyActionSet);
+    addMenuActionSet(PATIENT_CONTEXT_MENU, patientListActionSet);
 };

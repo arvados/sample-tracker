@@ -16,27 +16,21 @@ import { FormControl, InputLabel } from '@material-ui/core';
 import { MenuItem, Select } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { withStyles, WithStyles } from '@material-ui/core/styles';
-import { LinkResource } from "models/link";
+import { GroupResource } from "models/group";
 import { GroupClass } from "models/group";
 import { withDialog } from "store/dialog/with-dialog";
-import { SAMPLE_CREATE_FORM_NAME, AnalysisState, biopsyListPanelActions } from "./biopsyList";
+import { SAMPLE_CREATE_FORM_NAME, biopsyListPanelActions } from "./biopsyList";
 import {
     sampleTrackerSample, sampleTrackerSampleType,
-    sampleTrackerTimePoint, sampleTrackerAliquot,
-    sampleTrackerState, sampleTrackerBiopsyUuid,
-    sampleTrackerBatchUuid, sampleTrackerSentForSequencingAt,
-    sampleTrackerSequencingCompletedAt
+    sampleTrackerAliquot,
+    sampleTrackerState, sampleTrackerBatchId, sampleTrackerSentForSequencingAt,
+    sampleTrackerSequencingCompletedAt, AnalysisState, SampleType
 } from "./metadataTerms";
 
-enum SampleType {
-    DNA = "DNA",
-    RNA = "RNA",
-}
 
 export interface SampleCreateFormDialogData {
     biopsyUuid: string;
     sampleType: SampleType;
-    timePoint: number;
     aliquot: number;
     sentForSequencing: string;
     sequencingCompleted: string;
@@ -62,19 +56,19 @@ export const SampleStateSelect = styles(
                 {...input}>
                 <MenuItem value={AnalysisState.NEW}>
                     NEW
-		</MenuItem>
+                </MenuItem>
                 <MenuItem value={AnalysisState.AT_SEQUENCING}>
                     AT_SEQUENCING
-		</MenuItem>
+                </MenuItem>
                 <MenuItem value={AnalysisState.SEQUENCED}>
                     SEQUENCED
-		</MenuItem>
+                </MenuItem>
                 <MenuItem value={AnalysisState.SEQ_FAILED}>
                     SEQ_FAILED
-		</MenuItem>
+                </MenuItem>
                 <MenuItem value={AnalysisState.ANALYSIS_COMPLETE}>
                     ANALYSIS_COMPLETE
-		</MenuItem>
+                </MenuItem>
             </Select>
         </FormControl>);
 
@@ -85,10 +79,10 @@ export const SampleTypeSelect = styles(
                 {...input}>
                 <MenuItem value={SampleType.DNA}>
                     DNA
-		</MenuItem>
+                </MenuItem>
                 <MenuItem value={SampleType.RNA}>
                     RNA
-		</MenuItem>
+                </MenuItem>
             </Select>
         </FormControl>);
 
@@ -104,12 +98,6 @@ const SampleAddFields = () => <span>
             validate={mustBeDefined}
         />
     </div>
-
-    <InputLabel>Sample time point</InputLabel>
-    <Field
-        name='timePoint'
-        component={TextField as any}
-        type="number" />
 
     <InputLabel>Aliquot</InputLabel>
     <Field
@@ -137,7 +125,6 @@ const SampleAddFields = () => <span>
         component={SampleStateSelect as any}
         validate={mustBeDefined}
     /></div>
-
 </span>;
 
 
@@ -150,14 +137,9 @@ const DialogSampleCreate = (props: DialogSampleProps) =>
     />;
 
 const makeSampleId = (data: SampleCreateFormDialogData, state: RootState): string => {
-    const rscSamp = getResource<LinkResource>(data.biopsyUuid)(state.resources);
+    const rscSamp = getResource<GroupResource>(data.biopsyUuid)(state.resources);
     let id = rscSamp!.name + "_" + data.sampleType;
 
-    if (data.timePoint < 10) {
-        id = id + "_0" + data.timePoint;
-    } else {
-        id = id + "_" + data.timePoint;
-    }
     if (data.aliquot < 10) {
         id = id + "_0" + data.aliquot;
     } else {
@@ -168,28 +150,33 @@ const makeSampleId = (data: SampleCreateFormDialogData, state: RootState): strin
 
 const createSample = (data: SampleCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const rscSamp = getResource<LinkResource>(data.biopsyUuid)(getState().resources);
+        const rscSamp = getResource<GroupResource>(data.biopsyUuid)(getState().resources);
         dispatch(startSubmit(SAMPLE_CREATE_FORM_NAME));
+
+        if (data.sentForSequencing && data.state == AnalysisState.NEW) {
+            data.state = AnalysisState.AT_SEQUENCING;
+        }
+        if (data.sequencingCompleted && (data.state == AnalysisState.NEW || data.state == AnalysisState.AT_SEQUENCING)) {
+            data.state = AnalysisState.SEQUENCED;
+        }
+
         const p = {
             name: makeSampleId(data, getState()),
             ownerUuid: rscSamp!.ownerUuid,
-            groupClass: GroupClass.PROJECT,
             properties: {
                 "type": sampleTrackerSample,
                 [sampleTrackerSampleType]: data.sampleType,
-                [sampleTrackerTimePoint]: data.timePoint,
                 [sampleTrackerAliquot]: data.aliquot,
                 [sampleTrackerSentForSequencingAt]: data.sentForSequencing,
                 [sampleTrackerSequencingCompletedAt]: data.sequencingCompleted,
                 [sampleTrackerState]: data.state,
-                [sampleTrackerBiopsyUuid]: data.biopsyUuid,
-                [sampleTrackerBatchUuid]: "",
+                [sampleTrackerBatchId]: "",
             }
         };
         if (data.uuidSelf) {
-            await services.projectService.update(data.uuidSelf, p);
+            await services.collectionService.update(data.uuidSelf, p);
         } else {
-            await services.projectService.create(p);
+            await services.collectionService.create(p);
         }
         dispatch(dialogActions.CLOSE_DIALOG({ id: SAMPLE_CREATE_FORM_NAME }));
         dispatch(reset(SAMPLE_CREATE_FORM_NAME));

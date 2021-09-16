@@ -22,7 +22,9 @@ import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import Checkbox from '@material-ui/core/Checkbox';
 import { FormControl, InputLabel } from '@material-ui/core';
-import { GroupClass } from "models/group";
+import { GroupClass, GroupResource } from "models/group";
+import { withStyles, WithStyles } from '@material-ui/core/styles';
+import { ArvadosTheme } from 'common/custom-theme';
 
 import {
     batchListPanelActions,
@@ -30,7 +32,7 @@ import {
     openBatchCreateDialog, BatchCreateFormDialogData
 } from './batchList';
 import {
-    sampleTrackerBatch, sampleTrackerBatchUuid, sampleTrackerState
+    sampleTrackerBatch, sampleTrackerBatchId, sampleTrackerSample, sampleTrackerState
 } from './metadataTerms';
 
 import { SampleStateSelect } from './sample';
@@ -47,22 +49,31 @@ export const FormCheckbox =
 
 const mustBeDefined = (value: any) => value === undefined ? "Must be defined" : undefined;
 
-const BatchAddFields = (props: DialogProjectProps) => <span>
-    <ProjectNameField label="External batch id" />
-    <InputLabel>State</InputLabel>
-    <div><Field
-        name='state'
-        component={SampleStateSelect as any}
-        validate={mustBeDefined}
-    /></div>
-    <List>
-        {props.data.selections.map((val, idx) =>
-            <ListItem key={val.sample.uuid}>
-                <Field name={"selections[" + idx + "].value"} component={FormCheckbox} type="checkbox" />
-                <span>{val.sample.name}</span>
-            </ListItem>)}
-    </List>
-</span>;
+type CssRules = 'listItemWidth' | 'listPadding';
+
+const styles = withStyles<CssRules>((theme: ArvadosTheme) => ({
+    listItemWidth: {
+        width: "75%"
+    },
+    listPadding: {
+        paddingTop: "0",
+        paddingBottom: "0",
+    }
+}));
+
+const BatchAddFields = styles(
+    (props: DialogProjectProps & WithStyles<CssRules>) =>
+        <span>
+            <ProjectNameField label="External batch id" />
+            <List>
+                {props.data.selections.map((val, idx) =>
+                    <ListItem className={props.classes.listPadding} key={val.sample.uuid}>
+                        <Field name={"selections[" + idx + "].value"} component={FormCheckbox} type="checkbox" />
+                        <span className={props.classes.listItemWidth}>{val.sample.name}</span>
+                        <span>{val.sample.properties[sampleTrackerState]}</span>
+                    </ListItem>)}
+            </List>
+        </span>);
 
 const DialogBatchCreate = (props: DialogProjectProps) =>
     <FormDialog
@@ -78,27 +89,29 @@ const createBatch = (data: BatchCreateFormDialogData) =>
         const p = {
             name: data.name,
             ownerUuid: data.ownerUuid,
-            groupClass: GroupClass.PROJECT,
+            groupClass: GroupClass.FILTER,
             properties: {
                 "type": sampleTrackerBatch,
-                [sampleTrackerState]: data.state,
+                "filters": [["uuid", "is_a", "arvados#collection"],
+                ["collections.properties.type", "=", sampleTrackerSample],
+                ["collections.properties." + sampleTrackerBatchId, "=", data.name]]
             }
         };
-        let newBatch;
+
+        let newBatch: GroupResource;
         if (data.selfUuid) {
-            newBatch = await services.projectService.update(data.selfUuid, p);
+            newBatch = await services.groupsService.update(data.selfUuid, p);
         } else {
-            newBatch = await services.projectService.create(p);
+            newBatch = await services.groupsService.create(p);
         }
 
         for (const s of data.selections) {
             if (s.value && !s.startingValue) {
-                s.sample.properties[sampleTrackerBatchUuid] = newBatch.uuid;
-                s.sample.properties[sampleTrackerState] = data.state;
-                await services.groupsService.update(s.sample.uuid, { properties: s.sample.properties });
+                s.sample.properties[sampleTrackerBatchId] = newBatch.name;
+                await services.collectionService.update(s.sample.uuid, { properties: s.sample.properties });
             } else if (!s.value && s.startingValue) {
-                delete s.sample.properties[sampleTrackerBatchUuid];
-                await services.groupsService.update(s.sample.uuid, { properties: s.sample.properties });
+                delete s.sample.properties[sampleTrackerBatchId];
+                await services.collectionService.update(s.sample.uuid, { properties: s.sample.properties });
             }
         }
 
