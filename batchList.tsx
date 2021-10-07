@@ -147,17 +147,6 @@ export const batchListPanelColumns: DataColumns<string> = [
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <BatchNameComponent uuid={uuid} />
-    },
-    {
-        name: BatchPanelColumnNames.WORKFLOW_STATE,
-        selected: true,
-        configurable: true,
-        sortDirection: SortDirection.NONE,
-        filters: createTree(),
-        render: uuid => <ResourceComponent uuid={uuid}
-            render={rsc => <RunProcessComponent resource={rsc}
-                lookupProperty={BATCHES_TO_WORKFLOW_RUNS}
-                workflowToRun="x2b8c-7fd4e-oi0uz0pt4qnpk7v" />} />
     }
 ];
 
