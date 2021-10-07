@@ -110,10 +110,10 @@ export const openSampleCreateDialog = (biopsyUuid: string, editExisting?: Proper
         }));
     };
 
-export const SampleComponent = connect((state: RootState, props: { resource: PropertiedResource }) => props)(
-    (props: { resource: PropertiedResource } & DispatchProp<any>) =>
+export const SampleComponent = connect((state: RootState, props: { resource: PropertiedResource, biopsyUuid: string }) => props)(
+    (props: { resource: PropertiedResource, biopsyUuid: string } & DispatchProp<any>) =>
         <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }}
-            onClick={() => props.dispatch<any>(openSampleCreateDialog(props.resource.properties[sampleTrackerBiopsyUuid], props.resource))}
+            onClick={() => props.dispatch<any>(openSampleCreateDialog(props.biopsyUuid, props.resource))}
         >{props.resource.name}</Typography>);
 
 export const openBiopsyCreateDialog = (patientUuid: string, editExisting?: PropertiedResource) =>
@@ -194,7 +194,7 @@ export const biopsyListPanelColumns: DataColumns<string> = [
         filters: createTree(),
         render: uuid => <MultiResourceComponent uuid={uuid.substr(biopsyBaseRoutePath.length + 1)}
             lookupProperty={PATIENT_PANEL_BIOPSIES}
-            render={rsc => <SampleComponent resource={rsc} />} />
+            render={rsc => <SampleComponent resource={rsc} biopsyUuid={uuid} />} />
     },
     {
         name: BiopsyPanelColumnNames.TRACKER_STATE,
